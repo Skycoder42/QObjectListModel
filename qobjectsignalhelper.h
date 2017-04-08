@@ -1,16 +1,16 @@
-#ifndef OBJECTSIGNALHELPER_H
-#define OBJECTSIGNALHELPER_H
+#ifndef QOBJECTSIGNALHELPER_H
+#define QOBJECTSIGNALHELPER_H
 
 #include "qobjectlistmodel.h"
 
 #include <QMetaProperty>
 #include <QObject>
 
-class ObjectSignalHelper : public QObject
+class QObjectSignalHelper : public QObject
 {
 	Q_OBJECT
 public:
-	explicit ObjectSignalHelper(int role, const QMetaMethod &signal, QObjectListModel *parent = nullptr);
+	explicit QObjectSignalHelper(int role, const QMetaMethod &signal, QObjectListModel *parent = nullptr);
 
 	void addObject(QObject *object);
 	void removeObject(QObject *object);
@@ -24,4 +24,4 @@ private:
 	const QMetaMethod _signal;
 };
 
-#endif // OBJECTSIGNALHELPER_H
+#endif // QOBJECTSIGNALHELPER_H

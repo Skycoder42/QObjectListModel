@@ -10,11 +10,12 @@ Item {
 
 		delegate: CheckDelegate {
 			width: parent.width
+			tristate: true
 			text: "<b>%1:</b> %3 <i>(%2)</i>"
 					.arg(model.objectName)
 					.arg(info)
 					.arg(count)
-			checkState: active
+			checkState: model.active
 
 			onCheckStateChanged: model.active = checkState
 		}

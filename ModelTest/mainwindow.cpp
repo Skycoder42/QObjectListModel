@@ -28,6 +28,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	proxy->setSourceModel(model);
 	proxy->addMapping(0, Qt::DisplayRole, "objectName");
 	proxy->addMapping(0, Qt::CheckStateRole, "active");
+	proxy->setExtraFlags(0, Qt::ItemIsUserCheckable | Qt::ItemIsAutoTristate);
 	proxy->addMapping(1, Qt::DisplayRole, "info");
 	proxy->addMapping(2, Qt::DisplayRole, "count");
 	ui->tableView->setModel(proxy);

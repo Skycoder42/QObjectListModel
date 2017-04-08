@@ -1,11 +1,11 @@
 HEADERS += \
-	$$PWD/objectsignalhelper.h \
     $$PWD/qobjectlistmodel.h \
-    $$PWD/qobjectproxymodel.h
+    $$PWD/qobjectproxymodel.h \
+    $$PWD/qobjectsignalhelper.h
 
 SOURCES += \
-	$$PWD/objectsignalhelper.cpp \
     $$PWD/qobjectlistmodel.cpp \
-    $$PWD/qobjectproxymodel.cpp
+    $$PWD/qobjectproxymodel.cpp \
+    $$PWD/qobjectsignalhelper.cpp
 
 INCLUDEPATH += $$PWD

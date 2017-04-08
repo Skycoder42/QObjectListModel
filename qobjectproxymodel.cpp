@@ -4,6 +4,7 @@ QObjectProxyModel::QObjectProxyModel(QStringList headers, QObject *parent) :
 	QIdentityProxyModel(parent),
 	_headers(headers),
 	_roleMapping(),
+	_extraFlags(),
 	_extraRoles()
 {}
 
@@ -19,6 +20,19 @@ void QObjectProxyModel::insertColumn(int index, const QString &text)
 	beginInsertColumns(QModelIndex(), index, index);
 	_headers.insert(index, text);
 	endInsertColumns();
+}
+
+void QObjectProxyModel::replaceColumn(int index, const QString &text)
+{
+	_headers[index] = text;
+	emit headerDataChanged(Qt::Horizontal, index, index);
+}
+
+void QObjectProxyModel::removeColumn(int index)
+{
+	beginRemoveColumns(QModelIndex(), index, index);
+	_headers.removeAt(index);
+	endRemoveColumns();
 }
 
 void QObjectProxyModel::addMapping(int column, int role, int sourceRole)
@@ -49,6 +63,13 @@ void QObjectProxyModel::setRoleName(int role, const QByteArray &name)
 {
 	beginResetModel();
 	_extraRoles.insert(role, name);
+	endResetModel();
+}
+
+void QObjectProxyModel::setExtraFlags(int column, Qt::ItemFlags extraFlags)
+{
+	beginResetModel();
+	_extraFlags.insert(column, extraFlags);
 	endResetModel();
 }
 
@@ -115,6 +136,14 @@ QHash<int, QByteArray> QObjectProxyModel::roleNames() const
 	for(auto it = _extraRoles.constBegin(); it != _extraRoles.constEnd(); it++)
 		roles.insert(it.key(), it.value());
 	return roles;
+}
+
+Qt::ItemFlags QObjectProxyModel::flags(const QModelIndex &index) const
+{
+	auto flags = QIdentityProxyModel::flags(index);
+	flags &= ~Qt::ItemIsEditable;//disable editing because it does not work
+	flags |= _extraFlags.value(index.column(), 0);
+	return flags;
 }
 
 void QObjectProxyModel::setSourceModel(QObjectListModel *sourceModel)

@@ -1,6 +1,6 @@
 #include "qobjectlistmodel.h"
 #include <QMetaProperty>
-#include "objectsignalhelper.h"
+#include "qobjectsignalhelper.h"
 
 QObjectListModel::QObjectListModel(const QMetaObject *objectType, bool objectOwner, QObject *parent) :
 	QObjectListModel(objectType, {}, objectOwner, parent)
@@ -17,13 +17,13 @@ QObjectListModel::QObjectListModel(const QMetaObject *objectType, const QByteArr
 {
 	_roleNames.insert(Qt::DisplayRole, _metaObject->property(0).name());//property 0 is the objectName property
 	_roleNames.insert(Qt::EditRole, _metaObject->property(0).name());//allow editing via simple role
-	_propertyHelpers.insert(0, new ObjectSignalHelper(Qt::DisplayRole, _metaObject->property(0).notifySignal(), this));
+	_propertyHelpers.insert(0, new QObjectSignalHelper(Qt::DisplayRole, _metaObject->property(0).notifySignal(), this));
 
 	auto roleIndex = Qt::UserRole + 1;
 	for(auto i = 1; i < _metaObject->propertyCount(); i++) {
 		auto prop = _metaObject->property(i);
 		if(prop.hasNotifySignal())
-			_propertyHelpers.insert(i, new ObjectSignalHelper(roleIndex, prop.notifySignal(), this));
+			_propertyHelpers.insert(i, new QObjectSignalHelper(roleIndex, prop.notifySignal(), this));
 		_roleNames.insert(roleIndex++, prop.name());
 	}
 
@@ -109,7 +109,8 @@ Qt::ItemFlags QObjectListModel::flags(const QModelIndex &index) const
 
 	auto flags = Qt::ItemIsEnabled |
 				 Qt::ItemIsSelectable |
-				 Qt::ItemIsDragEnabled;
+				 Qt::ItemIsDragEnabled |
+				 Qt::ItemNeverHasChildren;
 	if(_editable)
 		flags |= Qt::ItemIsEditable;
 	return flags;

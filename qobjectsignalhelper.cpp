@@ -1,25 +1,25 @@
-#include "objectsignalhelper.h"
+#include "qobjectsignalhelper.h"
 #include <QVector>
 
-ObjectSignalHelper::ObjectSignalHelper(int role, const QMetaMethod &signal, QObjectListModel *parent) :
+QObjectSignalHelper::QObjectSignalHelper(int role, const QMetaMethod &signal, QObjectListModel *parent) :
 	QObject(parent),
 	_model(parent),
 	_role(role),
 	_signal(signal)
 {}
 
-void ObjectSignalHelper::addObject(QObject *object)
+void QObjectSignalHelper::addObject(QObject *object)
 {
 	auto slot = metaObject()->method(metaObject()->indexOfSlot("propertyChanged()"));
 	connect(object, _signal, this, slot);
 }
 
-void ObjectSignalHelper::removeObject(QObject *object)
+void QObjectSignalHelper::removeObject(QObject *object)
 {
 	object->disconnect(this);
 }
 
-void ObjectSignalHelper::propertyChanged()
+void QObjectSignalHelper::propertyChanged()
 {
 	auto index = _model->index(sender());
 	if(index.isValid())

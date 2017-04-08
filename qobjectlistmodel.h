@@ -3,7 +3,7 @@
 
 #include <QAbstractListModel>
 
-class ObjectSignalHelper;
+class QObjectSignalHelper;
 class QObjectListModel : public QAbstractListModel
 {
 	Q_OBJECT
@@ -61,7 +61,7 @@ private:
 	QHash<int, QByteArray> _roleNames;
 	bool _editable;
 	QObjectList _objects;
-	QHash<int, ObjectSignalHelper*> _propertyHelpers;
+	QHash<int, QObjectSignalHelper*> _propertyHelpers;
 
 	void connectPropertyChanges(QObject *object);
 	void disconnectPropertyChanges(QObject *object);
