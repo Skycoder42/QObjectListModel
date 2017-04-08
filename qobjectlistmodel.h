@@ -22,6 +22,8 @@ public:
 	QObjectList objects() const;
 	QObject *object(const QModelIndex &index) const;
 	QObject *object(int index) const;
+	QObject *takeObject(const QModelIndex &index);
+	QObject *takeObject(int index);
 
 	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
@@ -37,7 +39,6 @@ public:
 	QHash<int, QByteArray> roleNames() const override;
 
 	bool editable() const;
-	//TODO add take object
 
 public slots:
 	void addObject(QObject *object);
@@ -81,6 +82,8 @@ public:
 	QList<T*> objects() const;
 	T *object(const QModelIndex &index) const;
 	T *object(int index) const;
+	T *takeObject(const QModelIndex &index);
+	T *takeObject(int index);
 
 	void addObject(T *object);
 	void insertObject(const QModelIndex &index, T *object);
@@ -119,6 +122,18 @@ template<typename T>
 T *QGenericListModel<T>::object(int index) const
 {
 	return qobject_cast<T*>(QObjectListModel::object(index));
+}
+
+template<typename T>
+T *QGenericListModel<T>::takeObject(const QModelIndex &index)
+{
+	return qobject_cast<T*>(QObjectListModel::takeObject(index));
+}
+
+template<typename T>
+T *QGenericListModel<T>::takeObject(int index)
+{
+	return qobject_cast<T*>(QObjectListModel::takeObject(index));
 }
 
 template<typename T>

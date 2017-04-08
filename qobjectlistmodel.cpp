@@ -45,6 +45,22 @@ QObject *QObjectListModel::object(int index) const
 	return _objects[index];
 }
 
+QObject *QObjectListModel::takeObject(const QModelIndex &index)
+{
+	return takeObject(index.row());
+}
+
+QObject *QObjectListModel::takeObject(int index)
+{
+	beginRemoveRows(QModelIndex(), index, index);
+	auto obj = _objects.takeAt(index);
+	disconnectPropertyChanges(obj);
+	if(_objectOwner && obj->parent() == this)
+		obj->setParent(nullptr);
+	endRemoveRows();
+	return obj;
+}
+
 QVariant QObjectListModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
 	if(section == 0 && orientation == Qt::Horizontal && role == Qt::DisplayRole)
