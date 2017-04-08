@@ -1,6 +1,0 @@
-
-<RCC>
-    <qresource prefix="/de/skycoder42/qobjectlistmodel">
-        <file>qmldir</file>
-    </qresource>
-</RCC>
