@@ -1,18 +1,18 @@
 {
   "name": "de.skycoder42.qobjectlistmodel",
-  "description": "A Collection of classes to easily create models with QObject and G_GADGET classes for widgets and quick",
+  "description": "A Collection of classes to easily create models with QObject classes for widgets and quick",
   "author": {
-    "name": "Skycoder",
-    "email": "skycoder42.de@gmx.de"
+	"name": "Skycoder",
+	"email": "skycoder42.de@gmx.de"
   },
   "repository": {
-    "type": "GITHUB",
-    "url": "https://github.com/Skycoder42/QObjectListModel.git"
+	"type": "GITHUB",
+	"url": "https://github.com/Skycoder42/QObjectListModel.git"
   },
   "version": {
-    "label": "1.0.0",
-    "revision": "",
-    "fingerprint": ""
+	"label": "1.0.0",
+	"revision": "",
+	"fingerprint": ""
   },
   "dependencies": [
   ],

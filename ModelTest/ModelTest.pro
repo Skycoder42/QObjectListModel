@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui quickwidgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -25,8 +25,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 include(../de_skycoder42_qobjectlistmodel.pri)
 
 SOURCES += main.cpp\
-		mainwindow.cpp
+		mainwindow.cpp \
+    testobject.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    testobject.h
 
 FORMS    += mainwindow.ui
+
+RESOURCES += \
+    qml.qrc

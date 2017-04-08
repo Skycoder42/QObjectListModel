@@ -1,7 +1,12 @@
-#include "objectlistmodel.h"
+#include "qobjectlistmodel.h"
 #include <QMetaProperty>
 #include "objectsignalhelper.h"
-ObjectListModel::ObjectListModel(const QMetaObject *objectType, bool objectOwner, QObject *parent) :
+
+QObjectListModel::QObjectListModel(const QMetaObject *objectType, bool objectOwner, QObject *parent) :
+	QObjectListModel(objectType, {}, objectOwner, parent)
+{}
+
+QObjectListModel::QObjectListModel(const QMetaObject *objectType, const QByteArrayList extraProperties, bool objectOwner, QObject *parent) :
 	QAbstractListModel(parent),
 	_objectOwner(objectOwner),
 	_metaObject(objectType),
@@ -10,6 +15,10 @@ ObjectListModel::ObjectListModel(const QMetaObject *objectType, bool objectOwner
 	_objects(),
 	_propertyHelpers()
 {
+	_roleNames.insert(Qt::DisplayRole, _metaObject->property(0).name());//property 0 is the objectName property
+	_roleNames.insert(Qt::EditRole, _metaObject->property(0).name());//allow editing via simple role
+	_propertyHelpers.insert(0, new ObjectSignalHelper(Qt::DisplayRole, _metaObject->property(0).notifySignal(), this));
+
 	auto roleIndex = Qt::UserRole + 1;
 	for(auto i = 1; i < _metaObject->propertyCount(); i++) {
 		auto prop = _metaObject->property(i);
@@ -17,26 +26,26 @@ ObjectListModel::ObjectListModel(const QMetaObject *objectType, bool objectOwner
 			_propertyHelpers.insert(i, new ObjectSignalHelper(roleIndex, prop.notifySignal(), this));
 		_roleNames.insert(roleIndex++, prop.name());
 	}
-	_roleNames.insert(Qt::DisplayRole, _metaObject->property(0).name());
-	_propertyHelpers.insert(0, new ObjectSignalHelper(Qt::DisplayRole, _metaObject->property(0).notifySignal(), this));
+
+	//TODO add extra properties with the QDynamicPropertyChangeEvent
 }
 
-QObjectList ObjectListModel::objects() const
+QObjectList QObjectListModel::objects() const
 {
 	return _objects;
 }
 
-QObject *ObjectListModel::object(const QModelIndex &index) const
+QObject *QObjectListModel::object(const QModelIndex &index) const
 {
 	return object(index.row());
 }
 
-QObject *ObjectListModel::object(int index) const
+QObject *QObjectListModel::object(int index) const
 {
 	return _objects[index];
 }
 
-QVariant ObjectListModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant QObjectListModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
 	if(section == 0 && orientation == Qt::Horizontal && role == Qt::DisplayRole)
 		return QString::fromLatin1(_metaObject->className());
@@ -44,7 +53,7 @@ QVariant ObjectListModel::headerData(int section, Qt::Orientation orientation, i
 		return {};
 }
 
-int ObjectListModel::rowCount(const QModelIndex &parent) const
+int QObjectListModel::rowCount(const QModelIndex &parent) const
 {
 	if (parent.isValid())
 		return 0;
@@ -52,7 +61,7 @@ int ObjectListModel::rowCount(const QModelIndex &parent) const
 		return _objects.size();
 }
 
-QModelIndex ObjectListModel::index(QObject *object) const
+QModelIndex QObjectListModel::index(QObject *object) const
 {
 	auto idx = _objects.indexOf(object);
 	if(idx != -1)
@@ -61,7 +70,7 @@ QModelIndex ObjectListModel::index(QObject *object) const
 		return {};
 }
 
-QVariant ObjectListModel::data(const QModelIndex &index, int role) const
+QVariant QObjectListModel::data(const QModelIndex &index, int role) const
 {
 	if (!testValid(index, role))
 		return {};
@@ -73,7 +82,7 @@ QVariant ObjectListModel::data(const QModelIndex &index, int role) const
 		return _metaObject->property(pIndex).read(_objects[index.row()]);
 }
 
-bool ObjectListModel::setData(const QModelIndex &index, const QVariant &value, int role)
+bool QObjectListModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
 	if(!_editable || !flags(index).testFlag(Qt::ItemIsEditable))
 		return false;
@@ -85,7 +94,7 @@ bool ObjectListModel::setData(const QModelIndex &index, const QVariant &value, i
 		if(pIndex != -1) {
 			auto ok = _metaObject->property(pIndex).write(_objects[index.row()], value);
 			if(ok)
-				emit dataChanged(index, index, QVector<int>() << role);
+				emit dataChanged(index, index, {role});
 			return ok;
 		}
 	}
@@ -93,28 +102,30 @@ bool ObjectListModel::setData(const QModelIndex &index, const QVariant &value, i
 	return false;
 }
 
-Qt::ItemFlags ObjectListModel::flags(const QModelIndex &index) const
+Qt::ItemFlags QObjectListModel::flags(const QModelIndex &index) const
 {
 	if (!index.isValid())
 		return Qt::ItemIsDropEnabled;
 
-	return Qt::ItemIsEnabled |
-			Qt::ItemIsSelectable |
-			Qt::ItemIsEditable |
-			Qt::ItemIsDragEnabled;
+	auto flags = Qt::ItemIsEnabled |
+				 Qt::ItemIsSelectable |
+				 Qt::ItemIsDragEnabled;
+	if(_editable)
+		flags |= Qt::ItemIsEditable;
+	return flags;
 }
 
-QHash<int, QByteArray> ObjectListModel::roleNames() const
+QHash<int, QByteArray> QObjectListModel::roleNames() const
 {
 	return _roleNames;
 }
 
-bool ObjectListModel::editable() const
+bool QObjectListModel::editable() const
 {
 	return _editable;
 }
 
-void ObjectListModel::addObject(QObject *object)
+void QObjectListModel::addObject(QObject *object)
 {
 	beginInsertRows(QModelIndex(), _objects.size(), _objects.size());
 	_objects.append(object);
@@ -124,12 +135,12 @@ void ObjectListModel::addObject(QObject *object)
 	endInsertRows();
 }
 
-void ObjectListModel::insertObject(const QModelIndex &index, QObject *object)
+void QObjectListModel::insertObject(const QModelIndex &index, QObject *object)
 {
 	insertObject(index.row(), object);
 }
 
-void ObjectListModel::insertObject(int index, QObject *object)
+void QObjectListModel::insertObject(int index, QObject *object)
 {
 	beginInsertRows(QModelIndex(), index, index);
 	_objects.insert(index, object);
@@ -139,12 +150,12 @@ void ObjectListModel::insertObject(int index, QObject *object)
 	endInsertRows();
 }
 
-void ObjectListModel::removeObject(const QModelIndex &index)
+void QObjectListModel::removeObject(const QModelIndex &index)
 {
 	removeObject(index.row());
 }
 
-void ObjectListModel::removeObject(int index)
+void QObjectListModel::removeObject(int index)
 {
 	beginRemoveRows(QModelIndex(), index, index);
 	auto obj = _objects.takeAt(index);
@@ -155,7 +166,7 @@ void ObjectListModel::removeObject(int index)
 	endRemoveRows();
 }
 
-void ObjectListModel::resetModel(QObjectList objects)
+void QObjectListModel::resetModel(QObjectList objects)
 {
 	beginResetModel();
 	if(_objectOwner) {
@@ -173,7 +184,7 @@ void ObjectListModel::resetModel(QObjectList objects)
 	endResetModel();
 }
 
-void ObjectListModel::setEditable(bool editable)
+void QObjectListModel::setEditable(bool editable)
 {
 	if (_editable == editable)
 		return;
@@ -182,7 +193,7 @@ void ObjectListModel::setEditable(bool editable)
 	emit editableChanged(editable);
 }
 
-bool ObjectListModel::testValid(const QModelIndex &index, int role) const
+bool QObjectListModel::testValid(const QModelIndex &index, int role) const
 {
 	return index.isValid() &&
 			index.column() == 0 &&
@@ -190,14 +201,7 @@ bool ObjectListModel::testValid(const QModelIndex &index, int role) const
 			(role < 0 || _roleNames.contains(role));
 }
 
-void ObjectListModel::objectPropertyChanged()
-{
-	auto senderIndex = _objects.indexOf(sender());
-	if(senderIndex != -1)
-		emit dataChanged(index(senderIndex, 0), index(senderIndex, 0));
-}
-
-void ObjectListModel::connectPropertyChanges(QObject *object)
+void QObjectListModel::connectPropertyChanges(QObject *object)
 {
 	for(auto i = 1; i < _metaObject->propertyCount(); i++) {
 		auto helper = _propertyHelpers.value(i, nullptr);
@@ -206,7 +210,7 @@ void ObjectListModel::connectPropertyChanges(QObject *object)
 	}
 }
 
-void ObjectListModel::disconnectPropertyChanges(QObject *object)
+void QObjectListModel::disconnectPropertyChanges(QObject *object)
 {
 	for(auto i = 1; i < _metaObject->propertyCount(); i++) {
 		auto helper = _propertyHelpers.value(i, nullptr);

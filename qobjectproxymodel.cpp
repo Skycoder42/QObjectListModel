@@ -1,27 +1,27 @@
-#include "objectproxymodel.h"
+#include "qobjectproxymodel.h"
 
-ObjectProxyModel::ObjectProxyModel(QStringList headers, QObject *parent) :
+QObjectProxyModel::QObjectProxyModel(QStringList headers, QObject *parent) :
 	QIdentityProxyModel(parent),
 	_headers(headers),
 	_roleMapping(),
 	_extraRoles()
 {}
 
-void ObjectProxyModel::appendColumn(const QString &text)
+void QObjectProxyModel::appendColumn(const QString &text)
 {
 	beginInsertColumns(QModelIndex(), _headers.size(), _headers.size());
 	_headers.append(text);
 	endInsertColumns();
 }
 
-void ObjectProxyModel::insertColumn(int index, const QString &text)
+void QObjectProxyModel::insertColumn(int index, const QString &text)
 {
 	beginInsertColumns(QModelIndex(), index, index);
 	_headers.insert(index, text);
 	endInsertColumns();
 }
 
-void ObjectProxyModel::addMapping(int column, int role, int sourceRole)
+void QObjectProxyModel::addMapping(int column, int role, int sourceRole)
 {
 	beginResetModel();
 	Q_ASSERT(column < _headers.size());
@@ -31,7 +31,7 @@ void ObjectProxyModel::addMapping(int column, int role, int sourceRole)
 	endResetModel();
 }
 
-bool ObjectProxyModel::addMapping(int column, int role, const char *sourceRoleName)
+bool QObjectProxyModel::addMapping(int column, int role, const char *sourceRoleName)
 {
 	if(!sourceModel())
 		return false;
@@ -45,14 +45,14 @@ bool ObjectProxyModel::addMapping(int column, int role, const char *sourceRoleNa
 	}
 }
 
-void ObjectProxyModel::setRoleName(int role, const QByteArray &name)
+void QObjectProxyModel::setRoleName(int role, const QByteArray &name)
 {
 	beginResetModel();
 	_extraRoles.insert(role, name);
 	endResetModel();
 }
 
-QModelIndex ObjectProxyModel::index(int row, int column, const QModelIndex &parent) const
+QModelIndex QObjectProxyModel::index(int row, int column, const QModelIndex &parent) const
 {
 	if(parent.isValid())
 		return {};
@@ -67,12 +67,12 @@ QModelIndex ObjectProxyModel::index(int row, int column, const QModelIndex &pare
 	}
 }
 
-QModelIndex ObjectProxyModel::parent(const QModelIndex &) const
+QModelIndex QObjectProxyModel::parent(const QModelIndex &) const
 {
 	return {};
 }
 
-int ObjectProxyModel::columnCount(const QModelIndex &parent) const
+int QObjectProxyModel::columnCount(const QModelIndex &parent) const
 {
 	if(parent.isValid())
 		return 0;
@@ -80,7 +80,7 @@ int ObjectProxyModel::columnCount(const QModelIndex &parent) const
 		return _headers.size();
 }
 
-QVariant ObjectProxyModel::data(const QModelIndex &index, int role) const
+QVariant QObjectProxyModel::data(const QModelIndex &index, int role) const
 {
 	if(!sourceModel())
 		return {};
@@ -89,7 +89,7 @@ QVariant ObjectProxyModel::data(const QModelIndex &index, int role) const
 	return sourceModel()->data(src, srcRole);
 }
 
-bool ObjectProxyModel::setData(const QModelIndex &index, const QVariant &value, int role)
+bool QObjectProxyModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
 	if(!sourceModel())
 		return false;
@@ -98,7 +98,7 @@ bool ObjectProxyModel::setData(const QModelIndex &index, const QVariant &value, 
 	return sourceModel()->setData(src, value, srcRole);
 }
 
-QVariant ObjectProxyModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant QObjectProxyModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
 	if(section >= 0 &&
 	   section < _headers.size() &&
@@ -109,7 +109,7 @@ QVariant ObjectProxyModel::headerData(int section, Qt::Orientation orientation, 
 		return {};
 }
 
-QHash<int, QByteArray> ObjectProxyModel::roleNames() const
+QHash<int, QByteArray> QObjectProxyModel::roleNames() const
 {
 	auto roles = QIdentityProxyModel::roleNames();
 	for(auto it = _extraRoles.constBegin(); it != _extraRoles.constEnd(); it++)
@@ -117,17 +117,17 @@ QHash<int, QByteArray> ObjectProxyModel::roleNames() const
 	return roles;
 }
 
-void ObjectProxyModel::setSourceModel(ObjectListModel *sourceModel)
+void QObjectProxyModel::setSourceModel(QObjectListModel *sourceModel)
 {
 	QIdentityProxyModel::setSourceModel(sourceModel);
 }
 
-ObjectListModel *ObjectProxyModel::sourceModel() const
+QObjectListModel *QObjectProxyModel::sourceModel() const
 {
-	return qobject_cast<ObjectListModel*>(QIdentityProxyModel::sourceModel());
+	return qobject_cast<QObjectListModel*>(QIdentityProxyModel::sourceModel());
 }
 
-QModelIndex ObjectProxyModel::mapToSource(const QModelIndex &proxyIndex) const
+QModelIndex QObjectProxyModel::mapToSource(const QModelIndex &proxyIndex) const
 {
 	if(!sourceModel())
 		return {};
@@ -137,7 +137,7 @@ QModelIndex ObjectProxyModel::mapToSource(const QModelIndex &proxyIndex) const
 		return sourceModel()->index(proxyIndex.row(), 0);
 }
 
-QModelIndex ObjectProxyModel::mapFromSource(const QModelIndex &sourceIndex) const
+QModelIndex QObjectProxyModel::mapFromSource(const QModelIndex &sourceIndex) const
 {
 	if(!sourceModel())
 		return {};
@@ -147,13 +147,13 @@ QModelIndex ObjectProxyModel::mapFromSource(const QModelIndex &sourceIndex) cons
 		return index(sourceIndex.row(), 0);
 }
 
-void ObjectProxyModel::setSourceModel(QAbstractItemModel *sourceModel)
+void QObjectProxyModel::setSourceModel(QAbstractItemModel *sourceModel)
 {
 	Q_ASSERT(sourceModel->inherits("ObjectListModel"));
 	QIdentityProxyModel::setSourceModel(sourceModel);
 }
 
-QByteArray ObjectProxyModel::defaultRoleName(int role)
+QByteArray QObjectProxyModel::defaultRoleName(int role)
 {
 	switch (role) {
 	case Qt::DisplayRole:

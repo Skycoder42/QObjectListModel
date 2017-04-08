@@ -1,17 +1,23 @@
-#ifndef OBJECTLISTMODEL_H
-#define OBJECTLISTMODEL_H
+#ifndef QOBJECTLISTMODEL_H
+#define QOBJECTLISTMODEL_H
 
 #include <QAbstractListModel>
 
 class ObjectSignalHelper;
-class ObjectListModel : public QAbstractListModel
+class QObjectListModel : public QAbstractListModel
 {
 	Q_OBJECT
 
 	Q_PROPERTY(bool editable READ editable WRITE setEditable NOTIFY editableChanged)
 
 public:
-	explicit ObjectListModel(const QMetaObject *objectType, bool objectOwner, QObject *parent = nullptr);
+	explicit QObjectListModel(const QMetaObject *objectType,
+							  bool objectOwner,
+							  QObject *parent = nullptr);
+	explicit QObjectListModel(const QMetaObject *objectType,
+							  const QByteArrayList extraProperties,
+							  bool objectOwner,
+							  QObject *parent = nullptr);
 
 	QObjectList objects() const;
 	QObject *object(const QModelIndex &index) const;
@@ -31,6 +37,7 @@ public:
 	QHash<int, QByteArray> roleNames() const override;
 
 	bool editable() const;
+	//TODO add take object
 
 public slots:
 	void addObject(QObject *object);
@@ -48,9 +55,6 @@ signals:
 protected:
 	bool testValid(const QModelIndex &index, int role = -1) const;
 
-private slots:
-	void objectPropertyChanged();
-
 private:
 	bool _objectOwner;
 	const QMetaObject *_metaObject;
@@ -63,14 +67,16 @@ private:
 	void disconnectPropertyChanges(QObject *object);
 };
 
-Q_DECLARE_METATYPE(ObjectListModel*)
+Q_DECLARE_METATYPE(QObjectListModel*)
 
 template <typename T>
-class GenericListModel : public ObjectListModel
+class QGenericListModel : public QObjectListModel
 {
 	static_assert(std::is_base_of<QObject, T>::value, "T must inherit QObject!");
+
 public:
-	explicit GenericListModel(bool objectOwner, QObject *parent = nullptr);
+	explicit QGenericListModel(bool objectOwner, QObject *parent = nullptr);
+	explicit QGenericListModel(const QByteArrayList extraProperties, bool objectOwner, QObject *parent = nullptr);
 
 	QList<T*> objects() const;
 	T *object(const QModelIndex &index) const;
@@ -85,56 +91,61 @@ public:
 // ------------- Generic Implementation
 
 template<typename T>
-GenericListModel<T>::GenericListModel(bool objectOwner, QObject *parent) :
-	ObjectListModel(&T::staticMetaObject, objectOwner, parent)
+QGenericListModel<T>::QGenericListModel(bool objectOwner, QObject *parent) :
+	QObjectListModel(&T::staticMetaObject, objectOwner, parent)
 {}
 
 template<typename T>
-QList<T*> GenericListModel<T>::objects() const
+QGenericListModel<T>::QGenericListModel(const QByteArrayList extraProperties, bool objectOwner, QObject *parent) :
+	QObjectListModel(&T::staticMetaObject, extraProperties, objectOwner, parent)
+{}
+
+template<typename T>
+QList<T*> QGenericListModel<T>::objects() const
 {
 	QList<T*> list;
-	foreach(auto obj, ObjectListModel::objects())
+	foreach(auto obj, QObjectListModel::objects())
 		list.append(qobject_cast<T*>(obj));
 	return list;
 }
 
 template<typename T>
-T *GenericListModel<T>::object(const QModelIndex &index) const
+T *QGenericListModel<T>::object(const QModelIndex &index) const
 {
-	return qobject_cast<T*>(ObjectListModel::object(index));
+	return qobject_cast<T*>(QObjectListModel::object(index));
 }
 
 template<typename T>
-T *GenericListModel<T>::object(int index) const
+T *QGenericListModel<T>::object(int index) const
 {
-	return qobject_cast<T*>(ObjectListModel::object(index));
+	return qobject_cast<T*>(QObjectListModel::object(index));
 }
 
 template<typename T>
-void GenericListModel<T>::addObject(T *object)
+void QGenericListModel<T>::addObject(T *object)
 {
-	ObjectListModel::addObject(object);
+	QObjectListModel::addObject(object);
 }
 
 template<typename T>
-void GenericListModel<T>::insertObject(const QModelIndex &index, T *object)
+void QGenericListModel<T>::insertObject(const QModelIndex &index, T *object)
 {
-	ObjectListModel::insertObject(index, object);
+	QObjectListModel::insertObject(index, object);
 }
 
 template<typename T>
-void GenericListModel<T>::insertObject(int index, T *object)
+void QGenericListModel<T>::insertObject(int index, T *object)
 {
-	ObjectListModel::insertObject(index, object);
+	QObjectListModel::insertObject(index, object);
 }
 
 template<typename T>
-void GenericListModel<T>::resetModel(QList<T*> objects)
+void QGenericListModel<T>::resetModel(QList<T*> objects)
 {
 	QObjectList list;
 	foreach(auto obj, objects)
 		list.append(obj);
-	ObjectListModel::resetModel(list);
+	QObjectListModel::resetModel(list);
 }
 
-#endif // OBJECTLISTMODEL_H
+#endif // QOBJECTLISTMODEL_H

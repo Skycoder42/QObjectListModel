@@ -1,16 +1,16 @@
-#ifndef OBJECTPROXYMODEL_H
-#define OBJECTPROXYMODEL_H
+#ifndef QOBJECTPROXYMODEL_H
+#define QOBJECTPROXYMODEL_H
 
 #include <QIdentityProxyModel>
 #include <QObject>
-#include "objectlistmodel.h"
+#include "qobjectlistmodel.h"
 
-class ObjectProxyModel : public QIdentityProxyModel
+class QObjectProxyModel : public QIdentityProxyModel
 {
 	Q_OBJECT
 
 public:
-	explicit ObjectProxyModel(QStringList headers, QObject *parent = nullptr);
+	explicit QObjectProxyModel(QStringList headers, QObject *parent = nullptr);
 
 	void appendColumn(const QString &text);
 	void insertColumn(int index, const QString &text);
@@ -27,8 +27,8 @@ public:
 	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 	QHash<int, QByteArray> roleNames() const override;
 
-	void setSourceModel(ObjectListModel *sourceModel);
-	ObjectListModel *sourceModel() const;
+	void setSourceModel(QObjectListModel *sourceModel);
+	QObjectListModel *sourceModel() const;
 	QModelIndex mapToSource(const QModelIndex &proxyIndex) const override;
 	QModelIndex mapFromSource(const QModelIndex &sourceIndex) const override;
 
@@ -42,4 +42,4 @@ private:
 	void reloadRoles();
 };
 
-#endif // OBJECTPROXYMODEL_H
+#endif // QOBJECTPROXYMODEL_H
