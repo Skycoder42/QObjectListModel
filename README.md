@@ -27,7 +27,6 @@ Check their [GitHub - Usage for App Developers](https://github.com/Cutehacks/qpm
 
 ## Usage
 Thanks to the generic version, usage is pretty straight forward. The model has simple add/insert/remove methods to easily add objects, and can take ownership of it's objects. The following code shows how to create a qobject list model as well as the proxy.
-
 ```cpp
 // create and use the model
 auto model = new QGenericListModel<MyObject>(true, this);//true to be owner of objects
@@ -40,8 +39,22 @@ model->addObject(new MyObject(...));
 auto proxy = new QObjectProxyModel({"Name", "Info"}, this);// The headers. In this case 2 colums with the given headers are created
 proxy->setSourceModel(model);// IMPORTANT! Must be done before setting up the mappings
 proxy->addMapping(0, Qt::DisplayRole, "name");// Maps the display role of column 0 to the "name" role of the source model
-proxy->addMapping(1, Qt::DisplayRole, "info");// Maps the display role of column 1 to the "name" role of the source model
+proxy->addMapping(1, Qt::DisplayRole, "text");// Maps the display role of column 1 to the "text" role of the source model
 myView2->setModel(proxy);
+```
+
+To use the model in qml, all you need to do is create a custom delegate and assign the roles:
+```qml
+ListView {
+	model: listModel //model from c++, e.g. as a context property
+
+	delegate: ItemDelegate {
+		width: parent.width
+		text: name
+		ToolTip.text: model.text/ /use model.* if the role name is reserved
+	}
+}
+
 ```
 
 Check the `ModelTest` Project for a full example.
