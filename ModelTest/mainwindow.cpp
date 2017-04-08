@@ -5,8 +5,8 @@
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow),
-	model(new QGenericListModel<TestObject>(true, this)),
-	proxy(new QObjectProxyModel({"Name", "Info", "Count"}, this))
+	model(new QGenericListModel<TestObject>({"baum"}, true, this)),
+	proxy(new QObjectProxyModel({"Name", "Info", "Count", "Dynamic Baum"}, this))
 {
 	ui->setupUi(this);
 
@@ -15,6 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
 		t->setObjectName(QStringLiteral("Test %1").arg(i));
 		t->setInfo("This is an object");
 		t->setCount(i*i);
+		t->setProperty("baum", "42");
 		model->addObject(t);
 	}
 
@@ -31,6 +32,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	proxy->setExtraFlags(0, Qt::ItemIsUserCheckable | Qt::ItemIsAutoTristate);
 	proxy->addMapping(1, Qt::DisplayRole, "info");
 	proxy->addMapping(2, Qt::DisplayRole, "count");
+	proxy->addMapping(3, Qt::DisplayRole, "baum");
 	ui->tableView->setModel(proxy);
 }
 

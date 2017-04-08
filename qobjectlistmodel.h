@@ -63,9 +63,12 @@ private:
 	bool _editable;
 	QObjectList _objects;
 	QHash<int, QObjectSignalHelper*> _propertyHelpers;
+	QByteArrayList _extraProperties;
 
 	void connectPropertyChanges(QObject *object);
 	void disconnectPropertyChanges(QObject *object);
+
+	bool eventFilter(QObject *watched, QEvent *event) override;
 };
 
 Q_DECLARE_METATYPE(QObjectListModel*)

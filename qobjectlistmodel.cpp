@@ -1,4 +1,6 @@
 #include "qobjectlistmodel.h"
+#include <QEvent>
+#include <QDynamicPropertyChangeEvent>
 #include <QMetaProperty>
 #include "qobjectsignalhelper.h"
 
@@ -11,9 +13,10 @@ QObjectListModel::QObjectListModel(const QMetaObject *objectType, const QByteArr
 	_objectOwner(objectOwner),
 	_metaObject(objectType),
 	_roleNames(),
-	_editable(true),
+	_editable(false),
 	_objects(),
-	_propertyHelpers()
+	_propertyHelpers(),
+	_extraProperties(extraProperties)
 {
 	_roleNames.insert(Qt::DisplayRole, _metaObject->property(0).name());//property 0 is the objectName property
 	_roleNames.insert(Qt::EditRole, _metaObject->property(0).name());//allow editing via simple role
@@ -27,7 +30,8 @@ QObjectListModel::QObjectListModel(const QMetaObject *objectType, const QByteArr
 		_roleNames.insert(roleIndex++, prop.name());
 	}
 
-	//TODO add extra properties with the QDynamicPropertyChangeEvent
+	foreach(auto extra, extraProperties)
+		_roleNames.insert(roleIndex++, extra);
 }
 
 QObjectList QObjectListModel::objects() const
@@ -91,11 +95,7 @@ QVariant QObjectListModel::data(const QModelIndex &index, int role) const
 	if (!testValid(index, role))
 		return {};
 
-	auto pIndex = _metaObject->indexOfProperty(_roleNames[role].constData());
-	if(pIndex == -1)
-		return {};
-	else
-		return _metaObject->property(pIndex).read(_objects[index.row()]);
+	return _objects[index.row()]->property(_roleNames[role].constData());
 }
 
 bool QObjectListModel::setData(const QModelIndex &index, const QVariant &value, int role)
@@ -105,15 +105,8 @@ bool QObjectListModel::setData(const QModelIndex &index, const QVariant &value, 
 	if (!testValid(index, role))
 		return false;
 
-	if (data(index, role) != value) {
-		auto pIndex = _metaObject->indexOfProperty(_roleNames[role].constData());
-		if(pIndex != -1) {
-			auto ok = _metaObject->property(pIndex).write(_objects[index.row()], value);
-			if(ok)
-				emit dataChanged(index, index, {role});
-			return ok;
-		}
-	}
+	if (data(index, role) != value)
+		return _objects[index.row()]->setProperty(_roleNames[role].constData(), value);
 
 	return false;
 }
@@ -225,6 +218,9 @@ void QObjectListModel::connectPropertyChanges(QObject *object)
 		if(helper)
 			helper->addObject(object);
 	}
+
+	if(!_extraProperties.isEmpty())
+		object->installEventFilter(this);
 }
 
 void QObjectListModel::disconnectPropertyChanges(QObject *object)
@@ -234,4 +230,25 @@ void QObjectListModel::disconnectPropertyChanges(QObject *object)
 		if(helper)
 			helper->removeObject(object);
 	}
+
+	if(!_extraProperties.isEmpty())
+		object->removeEventFilter(this);
+}
+
+bool QObjectListModel::eventFilter(QObject *watched, QEvent *event)
+{
+	if(event->type() == QEvent::DynamicPropertyChange) {
+		auto ev = static_cast<QDynamicPropertyChangeEvent*>(event);
+		if(_extraProperties.contains(ev->propertyName())) {
+			auto role = _roleNames.key(ev->propertyName(), -1);
+			if(role != -1) {
+				auto modelIndex = index(watched);
+				if(modelIndex.isValid())
+					emit dataChanged(modelIndex, modelIndex, {role});
+			}
+		}
+	}
+
+	//don't consume events, simply use it
+	return false;
 }
