@@ -51,7 +51,7 @@ ListView {
 	delegate: ItemDelegate {
 		width: parent.width
 		text: name
-		ToolTip.text: model.text/ /use model.* if the role name is reserved
+		ToolTip.text: model.text //use model.* if the role name is reserved
 	}
 }
 
