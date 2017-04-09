@@ -8,11 +8,16 @@ A Collection of classes to easily create models with QObject and G_GADGET classe
 	- Forwards property changes as model changes
 	- Can be used in QML ListView
 - Generic version for easier use in code
+- A QAbstractListModel for Q_GADGET classes
+	- Simplefied version for gadgets
+	- Works just like the QObject-Version, but gadgets have neither signals nor dynamic properties and are value types
 - Proxy Model to map roles to columns
-	- Allows you to use the model for QTreeView or QTableView
-	- Maps any role to a column + role
+	- Works with any QAbstractListModel (item models with 1 column and no children)
+	- Allows you to use the model for QAbstractItemView (e.g. QTreeView or QTableView)
+	- Maps any role to a column + role (e.g. name role to {column 0, display role})
 	- Custom header names
 	- Correctly forwards propert changes
+	- Editing does *not* work
 	
 One of the main advantages of this library is that you can use one model for both, a role-based QML ListView, and a column-based widgets QAbstractItemView, and that all property changes trigger data changes in the model and the views.
 
