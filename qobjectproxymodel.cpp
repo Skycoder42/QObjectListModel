@@ -144,17 +144,7 @@ Qt::ItemFlags QObjectProxyModel::flags(const QModelIndex &index) const
 	flags &= ~Qt::ItemIsEditable;//disable editing because it does not work
 	flags |= _extraFlags.value(index.column(), 0);
 	return flags;
-}
-
-void QObjectProxyModel::setSourceModel(QObjectListModel *sourceModel)
-{
-	QIdentityProxyModel::setSourceModel(sourceModel);
-}
-
-QObjectListModel *QObjectProxyModel::sourceModel() const
-{
-	return qobject_cast<QObjectListModel*>(QIdentityProxyModel::sourceModel());
-}
+}y
 
 QModelIndex QObjectProxyModel::mapToSource(const QModelIndex &proxyIndex) const
 {
@@ -174,12 +164,6 @@ QModelIndex QObjectProxyModel::mapFromSource(const QModelIndex &sourceIndex) con
 		return {};
 	else
 		return index(sourceIndex.row(), 0);
-}
-
-void QObjectProxyModel::setSourceModel(QAbstractItemModel *sourceModel)
-{
-	Q_ASSERT(sourceModel->inherits("ObjectListModel"));
-	QIdentityProxyModel::setSourceModel(sourceModel);
 }
 
 QByteArray QObjectProxyModel::defaultRoleName(int role)
