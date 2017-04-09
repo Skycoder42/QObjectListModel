@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/qml">
         <file>ModelView.qml</file>
+        <file>GadgetModelView.qml</file>
     </qresource>
 </RCC>

@@ -3,8 +3,10 @@
 
 #include <QMainWindow>
 #include <qobjectlistmodel.h>
+#include <qgadgetlistmodel.h>
 #include <qobjectproxymodel.h>
 #include "testobject.h"
+#include "testgadget.h"
 
 namespace Ui {
 class MainWindow;
@@ -23,6 +25,8 @@ private:
 
 	QGenericListModel<TestObject> *model;
 	QObjectProxyModel *proxy;
+
+	QGadgetListModel<TestGadget> *gModel;
 };
 
 #endif // MAINWINDOW_H

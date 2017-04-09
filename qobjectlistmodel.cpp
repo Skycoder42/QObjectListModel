@@ -68,7 +68,7 @@ QObject *QObjectListModel::takeObject(int index)
 QVariant QObjectListModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
 	if(section == 0 && orientation == Qt::Horizontal && role == Qt::DisplayRole)
-		return QString::fromLatin1(_metaObject->className());
+		return QString::fromUtf8(_metaObject->className());
 	else
 		return {};
 }

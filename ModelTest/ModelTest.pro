@@ -26,10 +26,12 @@ include(../de_skycoder42_qobjectlistmodel.pri)
 
 SOURCES += main.cpp\
 		mainwindow.cpp \
-    testobject.cpp
+    testobject.cpp \
+    testgadget.cpp
 
 HEADERS  += mainwindow.h \
-    testobject.h
+    testobject.h \
+    testgadget.h
 
 FORMS    += mainwindow.ui
 

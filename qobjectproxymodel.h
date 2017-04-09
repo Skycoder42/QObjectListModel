@@ -41,7 +41,7 @@ private:
 	QHash<int, Qt::ItemFlags> _extraFlags;
 	QHash<int, QByteArray> _extraRoles;
 
-y	static QByteArray defaultRoleName(int role);
+	static QByteArray defaultRoleName(int role);
 	void reloadRoles();
 };
 

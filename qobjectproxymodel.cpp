@@ -144,7 +144,7 @@ Qt::ItemFlags QObjectProxyModel::flags(const QModelIndex &index) const
 	flags &= ~Qt::ItemIsEditable;//disable editing because it does not work
 	flags |= _extraFlags.value(index.column(), 0);
 	return flags;
-}y
+}
 
 QModelIndex QObjectProxyModel::mapToSource(const QModelIndex &proxyIndex) const
 {
