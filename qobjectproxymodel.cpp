@@ -146,6 +146,16 @@ Qt::ItemFlags QObjectProxyModel::flags(const QModelIndex &index) const
 	return flags;
 }
 
+void QObjectProxyModel::setSourceModel(QAbstractListModel *sourceModel)
+{
+	QIdentityProxyModel::setSourceModel(sourceModel);
+}
+
+QAbstractListModel *QObjectProxyModel::sourceModel() const
+{
+	return qobject_cast<QAbstractListModel*>(QIdentityProxyModel::sourceModel());
+}
+
 QModelIndex QObjectProxyModel::mapToSource(const QModelIndex &proxyIndex) const
 {
 	if(!sourceModel())
@@ -164,6 +174,12 @@ QModelIndex QObjectProxyModel::mapFromSource(const QModelIndex &sourceIndex) con
 		return {};
 	else
 		return index(sourceIndex.row(), 0);
+}
+
+void QObjectProxyModel::setSourceModel(QAbstractItemModel *sourceModel)
+{
+	Q_ASSERT(sourceModel->inherits("QAbstractListModel"));
+	QIdentityProxyModel::setSourceModel(sourceModel);
 }
 
 QByteArray QObjectProxyModel::defaultRoleName(int role)

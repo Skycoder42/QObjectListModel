@@ -32,6 +32,8 @@ public:
 	QHash<int, QByteArray> roleNames() const override;
 	Qt::ItemFlags flags(const QModelIndex &index) const override;
 
+	void setSourceModel(QAbstractListModel *sourceModel);
+	QAbstractListModel *sourceModel() const;
 	QModelIndex mapToSource(const QModelIndex &proxyIndex) const override;
 	QModelIndex mapFromSource(const QModelIndex &sourceIndex) const override;
 
@@ -41,6 +43,7 @@ private:
 	QHash<int, Qt::ItemFlags> _extraFlags;
 	QHash<int, QByteArray> _extraRoles;
 
+	void setSourceModel(QAbstractItemModel *sourceModel) override;
 	static QByteArray defaultRoleName(int role);
 	void reloadRoles();
 };
