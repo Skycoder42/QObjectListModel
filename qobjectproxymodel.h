@@ -43,6 +43,9 @@ public:
 	QModelIndex mapToSource(const QModelIndex &proxyIndex) const override;
 	QModelIndex mapFromSource(const QModelIndex &sourceIndex) const override;
 
+private slots:
+	void extendDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles = QVector<int>());
+
 private:
 	QStringList _headers;
 	QHash<QPair<int, int>, int> _roleMapping;
@@ -52,6 +55,7 @@ private:
 	void setSourceModel(QAbstractItemModel *sourceModel) override;
 	static QByteArray defaultRoleName(int role);
 	void reloadRoles();
+	QModelIndex mapFromSource(const QModelIndex &sourceIndex, int column) const;
 };
 
 #endif // QOBJECTPROXYMODEL_H

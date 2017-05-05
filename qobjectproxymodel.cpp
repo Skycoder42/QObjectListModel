@@ -171,7 +171,7 @@ QModelIndex QObjectProxyModel::sibling(int row, int column, const QModelIndex &i
 		return {};
 	auto src = mapToSource(index);
 	src = sourceModel()->sibling(row, 0, src);
-	return this->index(src.row(), column, index.parent());
+	return mapFromSource(src, column);
 }
 
 QItemSelection QObjectProxyModel::mapSelectionFromSource(const QItemSelection &selection) const
@@ -223,7 +223,7 @@ QModelIndexList QObjectProxyModel::match(const QModelIndex &start, int role, con
 
 void QObjectProxyModel::setSourceModel(QAbstractListModel *sourceModel)
 {
-	QIdentityProxyModel::setSourceModel(sourceModel);
+	setSourceModel((QAbstractItemModel*)sourceModel);
 }
 
 QAbstractListModel *QObjectProxyModel::sourceModel() const
@@ -251,10 +251,26 @@ QModelIndex QObjectProxyModel::mapFromSource(const QModelIndex &sourceIndex) con
 		return index(sourceIndex.row(), 0);
 }
 
+void QObjectProxyModel::extendDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
+{
+	emit dataChanged(mapFromSource(topLeft), mapFromSource(bottomRight, columnCount() - 1), roles);
+}
+
 void QObjectProxyModel::setSourceModel(QAbstractItemModel *sourceModel)
 {
 	Q_ASSERT(sourceModel->inherits("QAbstractListModel"));
+
+	if(this->sourceModel()) {
+		disconnect(this->sourceModel(), &QAbstractListModel::dataChanged,
+				   this, &QObjectProxyModel::extendDataChanged);
+	}
+
 	QIdentityProxyModel::setSourceModel(sourceModel);
+
+	disconnect(this->sourceModel(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)),
+			   this, SLOT(_q_sourceDataChanged(QModelIndex,QModelIndex,QVector<int>)));
+	connect(this->sourceModel(), &QAbstractListModel::dataChanged,
+			this, &QObjectProxyModel::extendDataChanged);
 }
 
 QByteArray QObjectProxyModel::defaultRoleName(int role)
@@ -275,4 +291,14 @@ QByteArray QObjectProxyModel::defaultRoleName(int role)
 	default:
 		return "role_" + QByteArray::number(role);
 	}
+}
+
+QModelIndex QObjectProxyModel::mapFromSource(const QModelIndex &sourceIndex, int column) const
+{
+	if(!sourceModel())
+		return {};
+	if(!sourceIndex.isValid() || sourceIndex.parent().isValid())
+		return {};
+	else
+		return index(sourceIndex.row(), column);
 }
