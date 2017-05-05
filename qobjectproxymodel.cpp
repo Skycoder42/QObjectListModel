@@ -1,7 +1,9 @@
 #include "qobjectproxymodel.h"
 
+#include <QItemSelection>
+
 QObjectProxyModel::QObjectProxyModel(QStringList headers, QObject *parent) :
-	QIdentityProxyModel(parent),
+	QAbstractProxyModel(parent),
 	_headers(headers),
 	_roleMapping(),
 	_extraFlags(),
@@ -101,6 +103,14 @@ int QObjectProxyModel::columnCount(const QModelIndex &parent) const
 		return _headers.size();
 }
 
+int QObjectProxyModel::rowCount(const QModelIndex &parent) const
+{
+	if(!sourceModel())
+		return 0;
+	else
+		return sourceModel()->rowCount(mapToSource(parent));
+}
+
 QVariant QObjectProxyModel::data(const QModelIndex &index, int role) const
 {
 	if(!sourceModel())
@@ -132,7 +142,7 @@ QVariant QObjectProxyModel::headerData(int section, Qt::Orientation orientation,
 
 QHash<int, QByteArray> QObjectProxyModel::roleNames() const
 {
-	auto roles = QIdentityProxyModel::roleNames();
+	auto roles = QAbstractProxyModel::roleNames();
 	for(auto it = _extraRoles.constBegin(); it != _extraRoles.constEnd(); it++)
 		roles.insert(it.key(), it.value());
 	return roles;
@@ -140,20 +150,85 @@ QHash<int, QByteArray> QObjectProxyModel::roleNames() const
 
 Qt::ItemFlags QObjectProxyModel::flags(const QModelIndex &index) const
 {
-	auto flags = QIdentityProxyModel::flags(index);
+	auto flags = QAbstractProxyModel::flags(index);
 	flags &= ~Qt::ItemIsEditable;//disable editing because it does not work
 	flags |= _extraFlags.value(index.column(), 0);
 	return flags;
 }
 
+bool QObjectProxyModel::dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent)
+{
+	Q_UNUSED(column);
+	if(sourceModel())
+		return sourceModel()->dropMimeData(data, action, row, 0, mapToSource(parent));
+	else
+		return false;
+}
+
+QModelIndex QObjectProxyModel::sibling(int row, int column, const QModelIndex &index) const
+{
+	if(!sourceModel())
+		return {};
+	auto src = mapToSource(index);
+	src = sourceModel()->sibling(row, 0, src);
+	return this->index(src.row(), column, index.parent());
+}
+
+QItemSelection QObjectProxyModel::mapSelectionFromSource(const QItemSelection &selection) const
+{
+	QItemSelection proxySelection;
+
+	if (!sourceModel())
+		return proxySelection;
+
+	proxySelection.reserve(selection.count());
+	for (auto it = selection.constBegin(); it != selection.constEnd(); ++it) {
+		const QItemSelectionRange range(mapFromSource(it->topLeft()), mapFromSource(it->bottomRight()));
+		proxySelection.append(range);
+	}
+
+	return proxySelection;
+}
+
+QItemSelection QObjectProxyModel::mapSelectionToSource(const QItemSelection &selection) const
+{
+	QItemSelection sourceSelection;
+
+	if (!sourceModel())
+		return sourceSelection;
+
+	sourceSelection.reserve(selection.count());
+	for (auto it = selection.constBegin(); it != selection.constEnd(); ++it) {
+		const QItemSelectionRange range(mapToSource(it->topLeft()), mapToSource(it->bottomRight()));
+		sourceSelection.append(range);
+	}
+
+	return sourceSelection;
+}
+
+QModelIndexList QObjectProxyModel::match(const QModelIndex &start, int role, const QVariant &value, int hits, Qt::MatchFlags flags) const
+{
+	if (!sourceModel())
+		return QModelIndexList();
+
+	const QModelIndexList sourceList = sourceModel()->match(mapToSource(start), role, value, hits, flags);
+	QModelIndexList::const_iterator it = sourceList.constBegin();
+	const QModelIndexList::const_iterator end = sourceList.constEnd();
+	QModelIndexList proxyList;
+	proxyList.reserve(sourceList.count());
+	for ( ; it != end; ++it)
+		proxyList.append(mapFromSource(*it));
+	return proxyList;
+}
+
 void QObjectProxyModel::setSourceModel(QAbstractListModel *sourceModel)
 {
-	QIdentityProxyModel::setSourceModel(sourceModel);
+	QAbstractProxyModel::setSourceModel(sourceModel);
 }
 
 QAbstractListModel *QObjectProxyModel::sourceModel() const
 {
-	return qobject_cast<QAbstractListModel*>(QIdentityProxyModel::sourceModel());
+	return qobject_cast<QAbstractListModel*>(QAbstractProxyModel::sourceModel());
 }
 
 QModelIndex QObjectProxyModel::mapToSource(const QModelIndex &proxyIndex) const
@@ -179,7 +254,7 @@ QModelIndex QObjectProxyModel::mapFromSource(const QModelIndex &sourceIndex) con
 void QObjectProxyModel::setSourceModel(QAbstractItemModel *sourceModel)
 {
 	Q_ASSERT(sourceModel->inherits("QAbstractListModel"));
-	QIdentityProxyModel::setSourceModel(sourceModel);
+	QAbstractProxyModel::setSourceModel(sourceModel);
 }
 
 QByteArray QObjectProxyModel::defaultRoleName(int role)

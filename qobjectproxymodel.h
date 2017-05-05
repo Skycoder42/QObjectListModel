@@ -5,7 +5,7 @@
 #include <QObject>
 #include "qobjectlistmodel.h"
 
-class QObjectProxyModel : public QIdentityProxyModel
+class QObjectProxyModel : public QAbstractProxyModel
 {
 	Q_OBJECT
 
@@ -26,12 +26,18 @@ public:
 	QModelIndex index(int row, int column, const QModelIndex &parent = {}) const override;
 	QModelIndex parent(const QModelIndex &) const override;
 	int columnCount(const QModelIndex &parent = {}) const override;
-	QVariant data(const QModelIndex &index, int role) const override;
-	bool setData(const QModelIndex &index, const QVariant &value, int role) override;
-	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+	int rowCount(const QModelIndex& parent = {}) const override;
+	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+	bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::DisplayRole) override;
+	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 	QHash<int, QByteArray> roleNames() const override;
 	Qt::ItemFlags flags(const QModelIndex &index) const override;
+	bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
+	QModelIndex sibling(int row, int column, const QModelIndex &index) const override;
 
+	QItemSelection mapSelectionFromSource(const QItemSelection& selection) const override;
+	QItemSelection mapSelectionToSource(const QItemSelection& selection) const override;
+	QModelIndexList match(const QModelIndex& start, int role, const QVariant& value, int hits = 1, Qt::MatchFlags flags = Qt::MatchFlags(Qt::MatchStartsWith|Qt::MatchWrap)) const override;
 	void setSourceModel(QAbstractListModel *sourceModel);
 	QAbstractListModel *sourceModel() const;
 	QModelIndex mapToSource(const QModelIndex &proxyIndex) const override;
