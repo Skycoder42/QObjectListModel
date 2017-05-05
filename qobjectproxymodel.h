@@ -5,7 +5,7 @@
 #include <QObject>
 #include "qobjectlistmodel.h"
 
-class QObjectProxyModel : public QAbstractProxyModel
+class QObjectProxyModel : public QIdentityProxyModel
 {
 	Q_OBJECT
 

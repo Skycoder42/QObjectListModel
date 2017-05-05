@@ -3,7 +3,7 @@
 #include <QItemSelection>
 
 QObjectProxyModel::QObjectProxyModel(QStringList headers, QObject *parent) :
-	QAbstractProxyModel(parent),
+	QIdentityProxyModel(parent),
 	_headers(headers),
 	_roleMapping(),
 	_extraFlags(),
@@ -142,7 +142,7 @@ QVariant QObjectProxyModel::headerData(int section, Qt::Orientation orientation,
 
 QHash<int, QByteArray> QObjectProxyModel::roleNames() const
 {
-	auto roles = QAbstractProxyModel::roleNames();
+	auto roles = QIdentityProxyModel::roleNames();
 	for(auto it = _extraRoles.constBegin(); it != _extraRoles.constEnd(); it++)
 		roles.insert(it.key(), it.value());
 	return roles;
@@ -150,7 +150,7 @@ QHash<int, QByteArray> QObjectProxyModel::roleNames() const
 
 Qt::ItemFlags QObjectProxyModel::flags(const QModelIndex &index) const
 {
-	auto flags = QAbstractProxyModel::flags(index);
+	auto flags = QIdentityProxyModel::flags(index);
 	flags &= ~Qt::ItemIsEditable;//disable editing because it does not work
 	flags |= _extraFlags.value(index.column(), 0);
 	return flags;
@@ -223,12 +223,12 @@ QModelIndexList QObjectProxyModel::match(const QModelIndex &start, int role, con
 
 void QObjectProxyModel::setSourceModel(QAbstractListModel *sourceModel)
 {
-	QAbstractProxyModel::setSourceModel(sourceModel);
+	QIdentityProxyModel::setSourceModel(sourceModel);
 }
 
 QAbstractListModel *QObjectProxyModel::sourceModel() const
 {
-	return qobject_cast<QAbstractListModel*>(QAbstractProxyModel::sourceModel());
+	return qobject_cast<QAbstractListModel*>(QIdentityProxyModel::sourceModel());
 }
 
 QModelIndex QObjectProxyModel::mapToSource(const QModelIndex &proxyIndex) const
@@ -254,7 +254,7 @@ QModelIndex QObjectProxyModel::mapFromSource(const QModelIndex &sourceIndex) con
 void QObjectProxyModel::setSourceModel(QAbstractItemModel *sourceModel)
 {
 	Q_ASSERT(sourceModel->inherits("QAbstractListModel"));
-	QAbstractProxyModel::setSourceModel(sourceModel);
+	QIdentityProxyModel::setSourceModel(sourceModel);
 }
 
 QByteArray QObjectProxyModel::defaultRoleName(int role)
