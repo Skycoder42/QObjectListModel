@@ -179,13 +179,11 @@ void QObjectListModel::removeObject(int index)
 void QObjectListModel::resetModel(QObjectList objects)
 {
 	beginResetModel();
-	if(_objectOwner) {
-		foreach(auto obj, _objects) {
-			if(obj->parent() == this)
-				obj->deleteLater();
-			else
-				disconnectPropertyChanges(obj);
-		}
+	foreach(auto obj, _objects) {
+		if(_objectOwner && obj->parent() == this)
+			obj->deleteLater();
+		else
+			disconnectPropertyChanges(obj);
 	}
 
 	_objects = objects;

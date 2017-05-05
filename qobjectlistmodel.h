@@ -46,7 +46,7 @@ public slots:
 	void insertObject(int index, QObject *object);
 	void removeObject(const QModelIndex &index);
 	void removeObject(int index);
-	void resetModel(QObjectList objects);
+	void resetModel(QObjectList objects = {});
 
 	void setEditable(bool editable);
 
