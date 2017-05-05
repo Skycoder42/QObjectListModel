@@ -42,7 +42,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	proxy->addMapping(1, Qt::DisplayRole, "info");
 	proxy->addMapping(2, Qt::DisplayRole, "count");
 	proxy->addMapping(3, Qt::DisplayRole, "baum");
-	ui->tableView->setModel(proxy);
+	ui->treeView->setModel(proxy);
 
 	//gadget model
 	ui->quickWidget_2->rootContext()->setContextProperty("gadgetmodel", gModel);
