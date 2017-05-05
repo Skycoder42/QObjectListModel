@@ -5,7 +5,15 @@ TestObject::TestObject(QObject *parent) :
 	_info(),
 	_count(0),
 	_active(Qt::Unchecked)
-{}
+{
+	connect(this, &TestObject::objectNameChanged,
+			this, &TestObject::nameChanged);
+}
+
+QString TestObject::name() const
+{
+	return objectName();
+}
 
 QString TestObject::info() const
 {

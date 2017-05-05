@@ -12,7 +12,7 @@ Item {
 			width: parent.width
 			tristate: true
 			text: "<b>%1:</b> %3, %4 <i>(%2)</i>"
-					.arg(model.objectName)
+					.arg(name)
 					.arg(info)
 					.arg(count)
 					.arg(model.baum)

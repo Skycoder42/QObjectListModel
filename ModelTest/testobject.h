@@ -7,6 +7,7 @@ class TestObject : public QObject
 {
 	Q_OBJECT
 
+	Q_PROPERTY(QString name READ name NOTIFY nameChanged)
 	Q_PROPERTY(QString info READ info WRITE setInfo NOTIFY infoChanged)
 	Q_PROPERTY(int count READ count WRITE setCount NOTIFY countChanged)
 	Q_PROPERTY(Qt::CheckState active READ active WRITE setActive NOTIFY activeChanged)
@@ -14,6 +15,7 @@ class TestObject : public QObject
 public:
 	explicit TestObject(QObject *parent = nullptr);
 
+	QString name() const;
 	QString info() const;
 	int count() const;
 	Qt::CheckState active() const;
@@ -24,6 +26,7 @@ public slots:
 	void setActive(Qt::CheckState active);
 
 signals:
+	void nameChanged(QString name);
 	void infoChanged(QString info);
 	void countChanged(int count);
 	void activeChanged(Qt::CheckState active);
@@ -32,6 +35,7 @@ private:
 	QString _info;
 	int _count;
 	Qt::CheckState _active;
+	QString m_name;
 };
 
 #endif // TESTOBJECT_H
