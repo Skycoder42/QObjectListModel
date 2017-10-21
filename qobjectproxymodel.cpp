@@ -1,5 +1,6 @@
 #include "qobjectproxymodel.h"
 
+#include <QDebug>
 #include <QItemSelection>
 
 QObjectProxyModel::QObjectProxyModel(QStringList headers, QObject *parent) :
@@ -221,14 +222,22 @@ QModelIndexList QObjectProxyModel::match(const QModelIndex &start, int role, con
 	return proxyList;
 }
 
-void QObjectProxyModel::setSourceModel(QAbstractListModel *sourceModel)
+void QObjectProxyModel::setSourceModel(QAbstractItemModel *sourceModel)
 {
-	setSourceModel((QAbstractItemModel*)sourceModel);
-}
+	if(!sourceModel->inherits("QAbstractListModel"))
+		qWarning() << "model is not a list model! This can lead to undefined behaviour!";
 
-QAbstractListModel *QObjectProxyModel::sourceModel() const
-{
-	return qobject_cast<QAbstractListModel*>(QIdentityProxyModel::sourceModel());
+	if(this->sourceModel()) {
+		disconnect(this->sourceModel(), &QAbstractItemModel::dataChanged,
+				   this, &QObjectProxyModel::extendDataChanged);
+	}
+
+	QIdentityProxyModel::setSourceModel(sourceModel);
+
+	disconnect(this->sourceModel(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)),
+			   this, SLOT(_q_sourceDataChanged(QModelIndex,QModelIndex,QVector<int>)));
+	connect(this->sourceModel(), &QAbstractItemModel::dataChanged,
+			this, &QObjectProxyModel::extendDataChanged);
 }
 
 QModelIndex QObjectProxyModel::mapToSource(const QModelIndex &proxyIndex) const
@@ -254,23 +263,6 @@ QModelIndex QObjectProxyModel::mapFromSource(const QModelIndex &sourceIndex) con
 void QObjectProxyModel::extendDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
 {
 	emit dataChanged(mapFromSource(topLeft), mapFromSource(bottomRight, columnCount() - 1), roles);
-}
-
-void QObjectProxyModel::setSourceModel(QAbstractItemModel *sourceModel)
-{
-	Q_ASSERT(sourceModel->inherits("QAbstractListModel"));
-
-	if(this->sourceModel()) {
-		disconnect(this->sourceModel(), &QAbstractListModel::dataChanged,
-				   this, &QObjectProxyModel::extendDataChanged);
-	}
-
-	QIdentityProxyModel::setSourceModel(sourceModel);
-
-	disconnect(this->sourceModel(), SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)),
-			   this, SLOT(_q_sourceDataChanged(QModelIndex,QModelIndex,QVector<int>)));
-	connect(this->sourceModel(), &QAbstractListModel::dataChanged,
-			this, &QObjectProxyModel::extendDataChanged);
 }
 
 QByteArray QObjectProxyModel::defaultRoleName(int role)

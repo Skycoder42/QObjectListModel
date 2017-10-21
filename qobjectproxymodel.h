@@ -38,8 +38,7 @@ public:
 	QItemSelection mapSelectionFromSource(const QItemSelection& selection) const override;
 	QItemSelection mapSelectionToSource(const QItemSelection& selection) const override;
 	QModelIndexList match(const QModelIndex& start, int role, const QVariant& value, int hits = 1, Qt::MatchFlags flags = Qt::MatchFlags(Qt::MatchStartsWith|Qt::MatchWrap)) const override;
-	void setSourceModel(QAbstractListModel *sourceModel);
-	QAbstractListModel *sourceModel() const;
+	void setSourceModel(QAbstractItemModel *sourceModel) override;
 	QModelIndex mapToSource(const QModelIndex &proxyIndex) const override;
 	QModelIndex mapFromSource(const QModelIndex &sourceIndex) const override;
 
@@ -52,7 +51,6 @@ private:
 	QHash<int, Qt::ItemFlags> _extraFlags;
 	QHash<int, QByteArray> _extraRoles;
 
-	void setSourceModel(QAbstractItemModel *sourceModel) override;
 	static QByteArray defaultRoleName(int role);
 	void reloadRoles();
 	QModelIndex mapFromSource(const QModelIndex &sourceIndex, int column) const;
