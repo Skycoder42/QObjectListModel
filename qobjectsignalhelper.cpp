@@ -1,11 +1,11 @@
 #include "qobjectsignalhelper.h"
 #include <QVector>
 
-QObjectSignalHelper::QObjectSignalHelper(int role, const QMetaMethod &signal, QObjectListModel *parent) :
-	QObject(parent),
-	_model(parent),
-	_role(role),
-	_signal(signal)
+QObjectSignalHelper::QObjectSignalHelper(int role, QMetaMethod signal, QObjectListModel *parent) :
+	QObject{parent},
+	_model{parent},
+	_role{role},
+	_signal{std::move(signal)}
 {}
 
 void QObjectSignalHelper::addObject(QObject *object)
@@ -21,7 +21,5 @@ void QObjectSignalHelper::removeObject(QObject *object)
 
 void QObjectSignalHelper::propertyChanged()
 {
-	auto index = _model->index(sender());
-	if(index.isValid())
-		emit _model->dataChanged(index, index, {_role});
+	_model->triggerDataChange(sender(), _role);
 }

@@ -10,7 +10,7 @@ class QObjectSignalHelper : public QObject
 {
 	Q_OBJECT
 public:
-	explicit QObjectSignalHelper(int role, const QMetaMethod &signal, QObjectListModel *parent = nullptr);
+	explicit QObjectSignalHelper(int role, QMetaMethod signal, QObjectListModel *parent = nullptr);
 
 	void addObject(QObject *object);
 	void removeObject(QObject *object);
