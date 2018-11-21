@@ -73,7 +73,6 @@ template<typename TModel>
 int QModelAliasBaseAdapter<TModel>::columnCount(const QModelIndex &parent) const
 {
 	Q_ASSERT(this->checkIndex(parent, QAbstractItemModel::CheckIndexOption::DoNotUseParent));
-	Q_ASSERT_X(this->TModel::columnCount(parent) <= 1, Q_FUNC_INFO, "Cannot alias a model that has more than one column");
 	if(this->flags(parent).testFlag(Qt::ItemNeverHasChildren) || parent.column() > 0)
 		return 0;
 	else
