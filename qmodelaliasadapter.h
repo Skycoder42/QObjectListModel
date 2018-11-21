@@ -16,14 +16,18 @@ class QModelAliasBaseAdapter : public TModel
 public:
 	explicit QModelAliasBaseAdapter(QObject *parent = nullptr);
 
-	int columnCount(const QModelIndex &parent) const final;
-	QVariant data(const QModelIndex &index, int role) const final;
-	bool setData(const QModelIndex &index, const QVariant &value, int role) final;
-	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+	int columnCount(const QModelIndex &parent = {}) const final;
+	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const final;
+	bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::DisplayRole) final;
+	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
 	int addColumn(QString text);
 	int addColumn(QString text, int originalRole);
 	inline int addColumn(QString text, const char *originalRoleName);
+	void insertColumn(int column, const QString &text);
+	void insertColumn(int column, const QString &text, int originalRole);
+	inline void insertColumn(int column, const QString &text, const char *originalRoleName);
+
 	void addRole(int column, int aliasRole, int originalRole);
 	inline void addRole(int column, int aliasRole, const char *originalRoleName);
 	void clearColumns();
@@ -70,7 +74,7 @@ int QModelAliasBaseAdapter<TModel>::columnCount(const QModelIndex &parent) const
 {
 	Q_ASSERT(this->checkIndex(parent, QAbstractItemModel::CheckIndexOption::DoNotUseParent));
 	Q_ASSERT_X(this->TModel::columnCount(parent) <= 1, Q_FUNC_INFO, "Cannot alias a model that has more than one column");
-	if(this->flags(parent).testFlag(Qt::ItemNeverHasChildren))
+	if(this->flags(parent).testFlag(Qt::ItemNeverHasChildren) || parent.column() > 0)
 		return 0;
 	else
 		return _columns.isEmpty() ? 1 : _columns.size();
@@ -151,6 +155,28 @@ template<typename TModel>
 inline int QModelAliasBaseAdapter<TModel>::addColumn(QString text, const char *originalRoleName)
 {
 	return addColumn(std::move(text), this->roleNames().key(originalRoleName));
+}
+
+template<typename TModel>
+void QModelAliasBaseAdapter<TModel>::insertColumn(int column, const QString &text)
+{
+	this->beginInsertColumns(QModelIndex{}, column, column);
+	_columns.insert(column, {std::move(text), {}});
+	this->endInsertColumns();
+	emit this->headerDataChanged(Qt::Horizontal, column, _columns.size() - 1);
+}
+
+template<typename TModel>
+void QModelAliasBaseAdapter<TModel>::insertColumn(int column, const QString &text, int originalRole)
+{
+	insertColumn(column, std::move(text));
+	addRole(column, Qt::DisplayRole, originalRole);
+}
+
+template<typename TModel>
+inline void QModelAliasBaseAdapter<TModel>::insertColumn(int column, const QString &text, const char *originalRoleName)
+{
+	insertColumn(column, text, this->roleNames().key(originalRoleName));
 }
 
 template<typename TModel>

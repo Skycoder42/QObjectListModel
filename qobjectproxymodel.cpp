@@ -3,70 +3,15 @@
 #include <QDebug>
 #include <QItemSelection>
 
-QObjectProxyModel::QObjectProxyModel(QStringList headers, QObject *parent) :
-	QIdentityProxyModel(parent),
-	_headers(headers),
-	_roleMapping(),
-	_extraFlags(),
-	_extraRoles()
+QObjectProxyModel::QObjectProxyModel(QObject *parent) :
+	QModelAliasBaseAdapter{parent}
 {}
 
-void QObjectProxyModel::appendColumn(const QString &text)
+QObjectProxyModel::QObjectProxyModel(const QStringList &headers, QObject *parent) :
+	QModelAliasBaseAdapter{parent}
 {
-	beginInsertColumns(QModelIndex(), _headers.size(), _headers.size());
-	_headers.append(text);
-	endInsertColumns();
-}
-
-void QObjectProxyModel::insertColumn(int index, const QString &text)
-{
-	beginInsertColumns(QModelIndex(), index, index);
-	_headers.insert(index, text);
-	endInsertColumns();
-}
-
-void QObjectProxyModel::replaceColumn(int index, const QString &text)
-{
-	_headers[index] = text;
-	emit headerDataChanged(Qt::Horizontal, index, index);
-}
-
-void QObjectProxyModel::removeColumn(int index)
-{
-	beginRemoveColumns(QModelIndex(), index, index);
-	_headers.removeAt(index);
-	endRemoveColumns();
-}
-
-void QObjectProxyModel::addMapping(int column, int role, int sourceRole)
-{
-	beginResetModel();
-	Q_ASSERT(column < _headers.size());
-	_roleMapping.insert({column, role}, sourceRole);
-	if(!_extraRoles.contains(role))
-		_extraRoles.insert(role, defaultRoleName(role));
-	endResetModel();
-}
-
-bool QObjectProxyModel::addMapping(int column, int role, const char *sourceRoleName)
-{
-	if(!sourceModel())
-		return false;
-
-	auto sRole = sourceModel()->roleNames().key(sourceRoleName, -1);
-	if(sRole == -1)
-		return false;
-	else {
-		addMapping(column, role, sRole);
-		return true;
-	}
-}
-
-void QObjectProxyModel::setRoleName(int role, const QByteArray &name)
-{
-	beginResetModel();
-	_extraRoles.insert(role, name);
-	endResetModel();
+	for(const auto &header : headers)
+		addColumn(header);
 }
 
 void QObjectProxyModel::setExtraFlags(int column, Qt::ItemFlags extraFlags)
@@ -78,13 +23,12 @@ void QObjectProxyModel::setExtraFlags(int column, Qt::ItemFlags extraFlags)
 
 QModelIndex QObjectProxyModel::index(int row, int column, const QModelIndex &parent) const
 {
+	Q_ASSERT(checkIndex(parent, CheckIndexOption::NoOption));
 	if(parent.isValid())
 		return {};
 	else {
-		if(row < 0 ||
-		   column < 0 ||
-		   row >= rowCount() ||
-		   column >= columnCount())
+		if(row < 0 || row >= rowCount() ||
+		   column < 0 || column >= columnCount())
 			return {};
 		else
 			return createIndex(row, column);
@@ -96,69 +40,32 @@ QModelIndex QObjectProxyModel::parent(const QModelIndex &) const
 	return {};
 }
 
-int QObjectProxyModel::columnCount(const QModelIndex &parent) const
-{
-	if(parent.isValid())
-		return 0;
-	else
-		return _headers.size();
-}
-
 int QObjectProxyModel::rowCount(const QModelIndex &parent) const
 {
+	Q_ASSERT(this->checkIndex(parent, QAbstractItemModel::CheckIndexOption::DoNotUseParent));
 	if(!sourceModel())
 		return 0;
 	else
 		return sourceModel()->rowCount(mapToSource(parent));
 }
 
-QVariant QObjectProxyModel::data(const QModelIndex &index, int role) const
-{
-	if(!sourceModel())
-		return {};
-	auto src = mapToSource(index);
-	auto srcRole = _roleMapping.value({index.column(), role}, role);
-	return sourceModel()->data(src, srcRole);
-}
-
-bool QObjectProxyModel::setData(const QModelIndex &index, const QVariant &value, int role)
-{
-	if(!sourceModel())
-		return false;
-	auto src = mapToSource(index);
-	auto srcRole = _roleMapping.value({index.column(), role}, role);
-	return sourceModel()->setData(src, value, srcRole);
-}
-
-QVariant QObjectProxyModel::headerData(int section, Qt::Orientation orientation, int role) const
-{
-	if(section >= 0 &&
-	   section < _headers.size() &&
-	   orientation == Qt::Horizontal &&
-	   role == Qt::DisplayRole)
-		return _headers[section];
-	else
-		return {};
-}
-
 QHash<int, QByteArray> QObjectProxyModel::roleNames() const
 {
-	auto roles = QIdentityProxyModel::roleNames();
-	for(auto it = _extraRoles.constBegin(); it != _extraRoles.constEnd(); it++)
-		roles.insert(it.key(), it.value());
-	return roles;
+	return sourceModel() ? sourceModel()->roleNames() : QHash<int, QByteArray>{};
 }
 
 Qt::ItemFlags QObjectProxyModel::flags(const QModelIndex &index) const
 {
+	Q_ASSERT(checkIndex(index, CheckIndexOption::NoOption));
 	auto flags = QIdentityProxyModel::flags(index);
-	flags &= ~Qt::ItemIsEditable;//disable editing because it does not work
 	flags |= _extraFlags.value(index.column(), 0);
+	flags &= ~Qt::ItemIsEditable;//disable editing because it does not work
 	return flags;
 }
 
 bool QObjectProxyModel::dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent)
 {
+	Q_ASSERT(checkIndex(parent, CheckIndexOption::DoNotUseParent));
 	Q_UNUSED(column);
 	if(sourceModel())
 		return sourceModel()->dropMimeData(data, action, row, 0, mapToSource(parent));
@@ -168,11 +75,13 @@ bool QObjectProxyModel::dropMimeData(const QMimeData *data, Qt::DropAction actio
 
 QModelIndex QObjectProxyModel::sibling(int row, int column, const QModelIndex &index) const
 {
+	Q_ASSERT(checkIndex(index, CheckIndexOption::IndexIsValid));
 	if(!sourceModel())
 		return {};
-	auto src = mapToSource(index);
-	src = sourceModel()->sibling(row, 0, src);
-	return mapFromSource(src, column);
+	auto tIndex = mapToSource(index);
+	tIndex = sourceModel()->sibling(row, 0, tIndex);
+	tIndex = mapFromSource(tIndex);
+	return createIndex(tIndex.row(), column);
 }
 
 QItemSelection QObjectProxyModel::mapSelectionFromSource(const QItemSelection &selection) const
@@ -209,23 +118,23 @@ QItemSelection QObjectProxyModel::mapSelectionToSource(const QItemSelection &sel
 
 QModelIndexList QObjectProxyModel::match(const QModelIndex &start, int role, const QVariant &value, int hits, Qt::MatchFlags flags) const
 {
-	if (!sourceModel())
-		return QModelIndexList();
+	Q_ASSERT(checkIndex(start, CheckIndexOption::NoOption));
 
-	const QModelIndexList sourceList = sourceModel()->match(mapToSource(start), role, value, hits, flags);
-	QModelIndexList::const_iterator it = sourceList.constBegin();
-	const QModelIndexList::const_iterator end = sourceList.constEnd();
+	if (!sourceModel())
+		return {};
+
+	const auto sourceList = sourceModel()->match(mapToSource(start), role, value, hits, flags);
 	QModelIndexList proxyList;
 	proxyList.reserve(sourceList.count());
-	for ( ; it != end; ++it)
+	for (auto it = sourceList.constBegin(); it != sourceList.constEnd(); ++it)
 		proxyList.append(mapFromSource(*it));
 	return proxyList;
 }
 
 void QObjectProxyModel::setSourceModel(QAbstractItemModel *sourceModel)
 {
-	if(!sourceModel->inherits("QAbstractListModel"))
-		qWarning() << "model is not a list model! This can lead to undefined behaviour!";
+	if(sourceModel->columnCount() > 0)
+		qWarning() << "sourceModel has more than 1 column! This can lead to undefined behaviour!";
 
 	if(this->sourceModel()) {
 		disconnect(this->sourceModel(), &QAbstractItemModel::dataChanged,
@@ -242,6 +151,7 @@ void QObjectProxyModel::setSourceModel(QAbstractItemModel *sourceModel)
 
 QModelIndex QObjectProxyModel::mapToSource(const QModelIndex &proxyIndex) const
 {
+	Q_ASSERT(checkIndex(proxyIndex, CheckIndexOption::NoOption));
 	if(!sourceModel())
 		return {};
 	if(!proxyIndex.isValid() || proxyIndex.parent().isValid())
@@ -252,6 +162,7 @@ QModelIndex QObjectProxyModel::mapToSource(const QModelIndex &proxyIndex) const
 
 QModelIndex QObjectProxyModel::mapFromSource(const QModelIndex &sourceIndex) const
 {
+	Q_ASSERT(checkIndex(sourceIndex, CheckIndexOption::NoOption));
 	if(!sourceModel())
 		return {};
 	if(!sourceIndex.isValid() || sourceIndex.parent().isValid())
@@ -260,37 +171,23 @@ QModelIndex QObjectProxyModel::mapFromSource(const QModelIndex &sourceIndex) con
 		return index(sourceIndex.row(), 0);
 }
 
-void QObjectProxyModel::extendDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
-{
-	emit dataChanged(mapFromSource(topLeft), mapFromSource(bottomRight, columnCount() - 1), roles);
-}
-
-QByteArray QObjectProxyModel::defaultRoleName(int role)
-{
-	switch (role) {
-	case Qt::DisplayRole:
-		return "display";
-	case Qt::DecorationRole:
-		return "decoration";
-	case Qt::EditRole:
-		return "edit";
-	case Qt::ToolTipRole:
-		return "toolTip";
-	case Qt::StatusTipRole:
-		return "statusTip";
-	case Qt::WhatsThisRole:
-		return "whatsThis";
-	default:
-		return "role_" + QByteArray::number(role);
-	}
-}
-
-QModelIndex QObjectProxyModel::mapFromSource(const QModelIndex &sourceIndex, int column) const
+QVariant QObjectProxyModel::originalData(const QModelIndex &index, int role) const
 {
 	if(!sourceModel())
 		return {};
-	if(!sourceIndex.isValid() || sourceIndex.parent().isValid())
-		return {};
-	else
-		return index(sourceIndex.row(), column);
+	auto src = mapToSource(index);
+	return sourceModel()->data(src, role);
+}
+
+bool QObjectProxyModel::setOriginalData(const QModelIndex &index, const QVariant &value, int role)
+{
+	if(!sourceModel())
+		return false;
+	auto src = mapToSource(index);
+	return sourceModel()->setData(src, value, role);
+}
+
+void QObjectProxyModel::extendDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
+{
+	emitDataChanged(mapFromSource(topLeft), mapFromSource(bottomRight), roles);
 }
