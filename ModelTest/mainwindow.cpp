@@ -5,9 +5,8 @@
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow),
-	model(new QGenericListModel<TestObject>({"baum"}, true, this)),
-	proxy(new QObjectProxyModel({"Name", "Info", "Count", "Dynamic Baum"}, this)),
-	gModel(new QGadgetListModel<TestGadget>(this))
+	model(new QGenericListModel<TestObject>(true, this)),
+	gModel(new QGenericListModel<TestGadget>(this))
 {
 	ui->setupUi(this);
 	model->setEditable(true);
@@ -16,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
 		//list
 		auto t = new TestObject();
 		t->setObjectName(QStringLiteral("Test %1").arg(i));
-		t->setInfo("This is an object");
+		t->setInfo(QStringLiteral("This is object no. %1").arg(i));
 		t->setCount(i*i);
 		t->setProperty("baum", "42");
 		model->addObject(t);
@@ -32,20 +31,33 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->listView->setModel(model);
 
 	//qml list
-	ui->quickWidget->rootContext()->setContextProperty("listmodel", model);
+	ui->quickWidget->rootContext()->setContextProperty(QStringLiteral("listmodel"), model);
 
 	//table proxy
-	proxy->setSourceModel(model);
-	proxy->addMapping(0, Qt::DisplayRole, "objectName");
-	proxy->addMapping(0, Qt::CheckStateRole, "active");
-	proxy->setExtraFlags(0, Qt::ItemIsUserCheckable | Qt::ItemIsAutoTristate);
-	proxy->addMapping(1, Qt::DisplayRole, "info");
-	proxy->addMapping(2, Qt::DisplayRole, "count");
-	proxy->addMapping(3, Qt::DisplayRole, "baum");
-	ui->treeView->setModel(proxy);
+	model->addColumn(QStringLiteral("Name"));
+	model->addColumn(QStringLiteral("Info"));
+	model->addColumn(QStringLiteral("Count"));
+	model->addColumn(QStringLiteral("transformed"));
+	model->addRole(0, Qt::DisplayRole, "objectName");
+	model->addRole(0, Qt::EditRole, "objectName");
+	model->addRole(0, Qt::CheckStateRole, "active");
+	model->setExtraFlags(0, Qt::ItemIsUserCheckable | Qt::ItemIsUserTristate | Qt::ItemIsTristate);
+	model->addRole(1, Qt::DisplayRole, "info");
+	model->addRole(1, Qt::EditRole, "info");
+	model->addRole(2, Qt::DisplayRole, "count");
+	model->addRole(2, Qt::EditRole, "count");
+	model->addRole(3, Qt::DisplayRole, "objectName");
+	model->setExtraFlags(3, Qt::NoItemFlags, Qt::ItemIsEditable);
+	model->addAliasConverter(3, Qt::DisplayRole, [](QGenericListModel<TestObject>::Convert c, const QVariant &v) {
+		if(c == QGenericListModel<TestObject>::Convert::Read)
+			return QVariant{v.toString() + v.toString()};
+		else
+			return v;
+	});
+	ui->treeView->setModel(model);
 
 	//gadget model
-	ui->quickWidget_2->rootContext()->setContextProperty("gadgetmodel", gModel);
+	ui->quickWidget_2->rootContext()->setContextProperty(QStringLiteral("gadgetmodel"), gModel);
 }
 
 MainWindow::~MainWindow()

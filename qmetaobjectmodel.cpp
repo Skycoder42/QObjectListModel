@@ -26,6 +26,9 @@ Qt::ItemFlags QMetaObjectModel::flags(const QModelIndex &index) const
 				 Qt::ItemNeverHasChildren;
 	if(_editable)
 		flags |= Qt::ItemIsEditable;
+
+	applyExtraFlags(index.column(), flags);
+
 	return flags;
 }
 

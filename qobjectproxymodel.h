@@ -12,14 +12,11 @@ public:
 	explicit QObjectProxyModel(QObject *parent = nullptr);
 	explicit QObjectProxyModel(const QStringList &headers, QObject *parent = nullptr);
 
-	void setExtraFlags(int column, Qt::ItemFlags extraFlags);
-
 public:
 	QModelIndex index(int row, int column, const QModelIndex &parent = {}) const override;
 	QModelIndex parent(const QModelIndex &) const override;
 	int rowCount(const QModelIndex& parent = {}) const override;
 	QHash<int, QByteArray> roleNames() const override;
-	Qt::ItemFlags flags(const QModelIndex &index) const override;
 	bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
 	QModelIndex sibling(int row, int column, const QModelIndex &index) const override;
 
@@ -36,9 +33,6 @@ protected:
 
 private slots:
 	void extendDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles = QVector<int>());
-
-private:
-	QHash<int, Qt::ItemFlags> _extraFlags;
 };
 
 #endif // QOBJECTPROXYMODEL_H

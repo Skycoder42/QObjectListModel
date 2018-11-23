@@ -24,9 +24,7 @@ private:
 	Ui::MainWindow *ui;
 
 	QGenericListModel<TestObject> *model;
-	QObjectProxyModel *proxy;
-
-	QGadgetListModel<TestGadget> *gModel;
+	QGenericListModel<TestGadget> *gModel;
 };
 
 #endif // MAINWINDOW_H

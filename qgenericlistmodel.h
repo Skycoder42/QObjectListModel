@@ -14,7 +14,6 @@ using QGenericListModel_QObject_SFINAE = typename std::enable_if<std::is_base_of
 template <typename TObject>
 class QGenericListModel<TObject, QGenericListModel_QObject_SFINAE<TObject>> : public QObjectListModel
 {
-	Q_OBJECT
 public:
 	explicit QGenericListModel(QObject *parent = nullptr);
 	explicit QGenericListModel(bool objectOwner, QObject *parent = nullptr);

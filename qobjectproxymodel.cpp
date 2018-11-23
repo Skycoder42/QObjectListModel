@@ -14,13 +14,6 @@ QObjectProxyModel::QObjectProxyModel(const QStringList &headers, QObject *parent
 		addColumn(header);
 }
 
-void QObjectProxyModel::setExtraFlags(int column, Qt::ItemFlags extraFlags)
-{
-	beginResetModel();
-	_extraFlags.insert(column, extraFlags);
-	endResetModel();
-}
-
 QModelIndex QObjectProxyModel::index(int row, int column, const QModelIndex &parent) const
 {
 	Q_ASSERT(checkIndex(parent, CheckIndexOption::NoOption));
@@ -52,15 +45,6 @@ int QObjectProxyModel::rowCount(const QModelIndex &parent) const
 QHash<int, QByteArray> QObjectProxyModel::roleNames() const
 {
 	return sourceModel() ? sourceModel()->roleNames() : QHash<int, QByteArray>{};
-}
-
-Qt::ItemFlags QObjectProxyModel::flags(const QModelIndex &index) const
-{
-	Q_ASSERT(checkIndex(index, CheckIndexOption::NoOption));
-	auto flags = QIdentityProxyModel::flags(index);
-	flags |= _extraFlags.value(index.column(), 0);
-	flags &= ~Qt::ItemIsEditable;//disable editing because it does not work
-	return flags;
 }
 
 bool QObjectProxyModel::dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent)

@@ -11,11 +11,10 @@ Item {
 		delegate: CheckDelegate {
 			width: parent.width
 			tristate: true
-			text: "<b>%1:</b> %3, %4 <i>(%2)</i>"
+			text: "<b>%1:</b> %3 <i>(%2)</i>"
 					.arg(name)
 					.arg(info)
 					.arg(count)
-					.arg(model.baum)
 			checkState: model.active
 
 			onCheckStateChanged: model.active = checkState

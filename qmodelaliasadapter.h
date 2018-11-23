@@ -14,24 +14,37 @@ class QModelAliasBaseAdapter : public TModel
 	static_assert(std::is_base_of<QAbstractItemModel, TModel>::value, "TModel must inherit from QAbstractItemModel");
 
 public:
+	enum class Convert {
+		Read,
+		Write,
+	};
+
+	using ConverterFunc = std::function<QVariant(Convert, QVariant)>;
+
 	explicit QModelAliasBaseAdapter(QObject *parent = nullptr);
 
 	int columnCount(const QModelIndex &parent = {}) const final;
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const final;
 	bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::DisplayRole) final;
 	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+	Qt::ItemFlags flags(const QModelIndex &index) const override;
 
 	int addColumn(QString text);
 	int addColumn(QString text, int originalRole);
 	inline int addColumn(QString text, const char *originalRoleName);
-	void insertColumn(int column, const QString &text);
-	void insertColumn(int column, const QString &text, int originalRole);
+	void insertColumn(int column, QString text);
+	void insertColumn(int column, QString text, int originalRole);
 	inline void insertColumn(int column, const QString &text, const char *originalRoleName);
 
 	void addRole(int column, int aliasRole, int originalRole);
 	inline void addRole(int column, int aliasRole, const char *originalRoleName);
-	void clearColumns();
 
+	void addSrcConverter(int originalRole, const ConverterFunc &converter);
+	void addAliasConverter(int column, int aliasRole, const ConverterFunc &converter);
+
+	void setExtraFlags(int column, Qt::ItemFlags addFlags, Qt::ItemFlags removeFlags = Qt::NoItemFlags);
+
+	void clearColumns();
 	QString columnTitle(int column) const;
 	int resolveRole(int column, int aliasRole) const;
 
@@ -39,6 +52,8 @@ protected:
 	virtual QString defaultHeaderData() const;
 	virtual QVariant originalData(const QModelIndex &index, int role) const = 0;
 	virtual bool setOriginalData(const QModelIndex &index, const QVariant &value, int role) = 0;
+
+	void applyExtraFlags(int column, Qt::ItemFlags &flags) const;
 	void emitDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles = QVector<int>());
 
 	// dummy to make private
@@ -46,8 +61,24 @@ protected:
 
 private:
 	using RoleMapping = QHash<int, int>;
-	using ColumnInfo = QPair<QString, RoleMapping>;
+	using RoleConverters = QHash<int, ConverterFunc>;
+	struct ColumnInfo {
+		QString name;
+		RoleMapping roles;
+		RoleConverters converters;
+		Qt::ItemFlags addFlags = Qt::NoItemFlags;
+		Qt::ItemFlags removeFlags = Qt::NoItemFlags;
+
+		inline ColumnInfo() = default;
+		inline ColumnInfo(QString &&name) :
+			name{std::move(name)}
+		{}
+	};
 	QList<ColumnInfo> _columns;
+	RoleConverters _origRoleConverters;
+
+	QVariant dataImpl(const QModelIndex &index, int originalRole, const ColumnInfo &info, int aliasRole) const;
+	bool setDataImpl(const QModelIndex &index, QVariant value, int originalRole, const ColumnInfo &info, int aliasRole);
 };
 
 
@@ -84,17 +115,17 @@ QVariant QModelAliasBaseAdapter<TModel>::data(const QModelIndex &index, int role
 {
 	Q_ASSERT(this->checkIndex(index, QAbstractItemModel::CheckIndexOption::IndexIsValid));
 	if(_columns.isEmpty())
-		return originalData(index, role);
+		return dataImpl(index, role, {}, role);
 
 	// mappings do exist -> check for one
-	const auto origRole = _columns[index.column()].second.value(role, -1);
-	if(origRole == -1) { // no role -> forward for column 0, no data for all others
+	const auto origRole = _columns[index.column()].roles.value(role, -1);
+	if(origRole == -1) { // no role -> -> no mapping -> forward for column 0, no data for all others
 		if(index.column() == 0)
-			return originalData(index, role);
+			return dataImpl(index, role, {}, role);
 		else
 			return {};
 	} else // has role -> return data of original role at column 0
-		return originalData(index.siblingAtColumn(0), origRole);
+		return dataImpl(index.siblingAtColumn(0), origRole, _columns[index.column()], role);
 }
 
 template<typename TModel>
@@ -102,17 +133,17 @@ bool QModelAliasBaseAdapter<TModel>::setData(const QModelIndex &index, const QVa
 {
 	Q_ASSERT(this->checkIndex(index, QAbstractItemModel::CheckIndexOption::IndexIsValid));
 	if(_columns.isEmpty())
-		return setOriginalData(index, value, role);
+		return setDataImpl(index, value, role, {}, role);
 
 	// mappings do exist -> check for one
-	const auto origRole = _columns[index.column()].second.value(role, -1);
+	const auto origRole = _columns[index.column()].roles.value(role, -1);
 	if(origRole == -1) { // no role -> forward for column 0, no data for all others
 		if(index.column() == 0)
-			return setOriginalData(index, value, role);
+			return setDataImpl(index, value, role, {}, role);
 		else
 			return false;
 	} else // has role -> return data of original role at column 0
-		return setOriginalData(index.siblingAtColumn(0), value, origRole);
+		return setDataImpl(index.siblingAtColumn(0), value, origRole, _columns[index.column()], role);
 }
 
 template<typename TModel>
@@ -132,11 +163,20 @@ QVariant QModelAliasBaseAdapter<TModel>::headerData(int section, Qt::Orientation
 }
 
 template<typename TModel>
+Qt::ItemFlags QModelAliasBaseAdapter<TModel>::flags(const QModelIndex &index) const
+{
+	Q_ASSERT(this->checkIndex(index, QAbstractItemModel::CheckIndexOption::NoOption));
+	auto flags = this->TModel::flags(index);
+	applyExtraFlags(index.column(), flags);
+	return flags;
+}
+
+template<typename TModel>
 int QModelAliasBaseAdapter<TModel>::addColumn(QString text)
 {
 	const auto index = _columns.size();
 	this->beginInsertColumns(QModelIndex{}, index, index);
-	_columns.append({std::move(text), {}});
+	_columns.append(std::move(text));
 	this->endInsertColumns();
 	emit this->headerDataChanged(Qt::Horizontal, index, index);
 	return index;
@@ -157,7 +197,7 @@ inline int QModelAliasBaseAdapter<TModel>::addColumn(QString text, const char *o
 }
 
 template<typename TModel>
-void QModelAliasBaseAdapter<TModel>::insertColumn(int column, const QString &text)
+void QModelAliasBaseAdapter<TModel>::insertColumn(int column, QString text)
 {
 	this->beginInsertColumns(QModelIndex{}, column, column);
 	_columns.insert(column, {std::move(text), {}});
@@ -166,7 +206,7 @@ void QModelAliasBaseAdapter<TModel>::insertColumn(int column, const QString &tex
 }
 
 template<typename TModel>
-void QModelAliasBaseAdapter<TModel>::insertColumn(int column, const QString &text, int originalRole)
+void QModelAliasBaseAdapter<TModel>::insertColumn(int column, QString text, int originalRole)
 {
 	insertColumn(column, std::move(text));
 	addRole(column, Qt::DisplayRole, originalRole);
@@ -187,7 +227,7 @@ void QModelAliasBaseAdapter<TModel>::addRole(int column, int aliasRole, int orig
 				   << "Triggered for alias role" << aliasRole << ", named" << this->roleNames().value(aliasRole);
 	}
 
-	_columns[column].second.insert(aliasRole, originalRole);
+	_columns[column].roles.insert(aliasRole, originalRole);
 	const auto rows = this->rowCount();
 	if(rows > 0)
 		emit this->dataChanged(this->index(0, column), this->index(rows - 1, column), {aliasRole});
@@ -197,6 +237,29 @@ template<typename TModel>
 inline void QModelAliasBaseAdapter<TModel>::addRole(int column, int aliasRole, const char *originalRoleName)
 {
 	addRole(column, aliasRole, this->roleNames().key(originalRoleName));
+}
+
+template<typename TModel>
+void QModelAliasBaseAdapter<TModel>::addSrcConverter(int originalRole, const ConverterFunc &converter)
+{
+	_origRoleConverters.insert(originalRole, converter);
+}
+
+template<typename TModel>
+void QModelAliasBaseAdapter<TModel>::addAliasConverter(int column, int aliasRole, const ConverterFunc &converter)
+{
+	Q_ASSERT_X(column < _columns.size(), Q_FUNC_INFO, "Cannot add role converter to non existant column!");
+	_columns[column].converters.insert(aliasRole, converter);
+}
+
+template<typename TModel>
+void QModelAliasBaseAdapter<TModel>::setExtraFlags(int column, Qt::ItemFlags addFlags, Qt::ItemFlags removeFlags)
+{
+	Q_ASSERT_X(column < _columns.size(), Q_FUNC_INFO, "Cannot add flags to non existant column!");
+	this->beginResetModel();
+	_columns[column].addFlags = addFlags;
+	_columns[column].removeFlags = removeFlags;
+	this->endResetModel();
 }
 
 template<typename TModel>
@@ -211,14 +274,14 @@ template<typename TModel>
 QString QModelAliasBaseAdapter<TModel>::columnTitle(int column) const
 {
 	Q_ASSERT_X(column < _columns.size(), Q_FUNC_INFO, "Cannot return the name of a non existant column!");
-	return _columns.value(column).first;
+	return _columns.value(column).name;
 }
 
 template<typename TModel>
 int QModelAliasBaseAdapter<TModel>::resolveRole(int column, int aliasRole) const
 {
 	Q_ASSERT_X(column < _columns.size(), Q_FUNC_INFO, "Cannot return the original role of a non existant column!");
-	return _columns[column].second.value(aliasRole, -1);
+	return _columns[column].roles.value(aliasRole, -1);
 }
 
 template<typename TModel>
@@ -226,6 +289,15 @@ QString QModelAliasBaseAdapter<TModel>::defaultHeaderData() const
 {
 	const auto self = static_cast<const TModel*>(this);
 	return self->TModel::headerData(0, Qt::Horizontal, Qt::DisplayRole).toString();
+}
+
+template<typename TModel>
+void QModelAliasBaseAdapter<TModel>::applyExtraFlags(int column, Qt::ItemFlags &flags) const
+{
+	if(!_columns.isEmpty()) {
+		flags |= _columns[column].addFlags;
+		flags &= ~(_columns[column].removeFlags);
+	}
 }
 
 template<typename TModel>
@@ -245,7 +317,7 @@ void QModelAliasBaseAdapter<TModel>::emitDataChanged(const QModelIndex &topLeft,
 	auto cCounter = 0;
 	for(const auto &columnInfo : qAsConst(_columns)) {
 		for(auto role : roles) {
-			const auto aliasRoles = columnInfo.second.keys(role);
+			const auto aliasRoles = columnInfo.roles.keys(role);
 			for(const auto &aliasRole : aliasRoles) {
 				lastColumn = std::max(lastColumn, cCounter);
 				if(!allRoles.contains(aliasRole))
@@ -256,6 +328,31 @@ void QModelAliasBaseAdapter<TModel>::emitDataChanged(const QModelIndex &topLeft,
 	}
 
 	emit this->TModel::dataChanged(topLeft, bottomRight.siblingAtColumn(lastColumn), allRoles);
+}
+
+template<typename TModel>
+QVariant QModelAliasBaseAdapter<TModel>::dataImpl(const QModelIndex &index, int originalRole, const ColumnInfo &info, int aliasRole) const
+{
+	auto data = originalData(index, originalRole);
+	const auto &origConv = _origRoleConverters[originalRole];
+	if(origConv)
+		data = origConv(Convert::Read, data);
+	const auto &aliasConv = info.converters[aliasRole];
+	if(aliasConv)
+		data = aliasConv(Convert::Read, data);
+	return data;
+}
+
+template<typename TModel>
+bool QModelAliasBaseAdapter<TModel>::setDataImpl(const QModelIndex &index, QVariant value, int originalRole, const ColumnInfo &info, int aliasRole)
+{
+	const auto &aliasConv = info.converters[aliasRole];
+	if(aliasConv)
+		value = aliasConv(Convert::Write, value);
+	const auto &origConv = qAsConst(_origRoleConverters)[originalRole];
+	if(origConv)
+		value = origConv(Convert::Write, value);
+	return setOriginalData(index, value, originalRole);
 }
 
 
@@ -278,5 +375,6 @@ bool QModelAliasAdapter<TModel>::setOriginalData(const QModelIndex &index, const
 	const auto self = static_cast<TModel*>(this);
 	return self->TModel::setData(index, value, role);
 }
+
 
 #endif // QMODELALIASADAPTER_H
