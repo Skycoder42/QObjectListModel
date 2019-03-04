@@ -42,6 +42,31 @@ QObject *QObjectListModel::takeObject(int index)
 	return obj;
 }
 
+QObject *QObjectListModel::replaceObject(const QModelIndex &index, QObject *object)
+{
+	Q_ASSERT(checkIndex(index, CheckIndexOption::IndexIsValid | CheckIndexOption::ParentIsInvalid));
+	return replaceObject(index.row(), object);
+}
+
+QObject *QObjectListModel::replaceObject(int index, QObject *object)
+{
+	// remove old object
+	auto oldObj = _objects.at(index);
+	disconnectPropertyChanges(oldObj);
+	if(_objectOwner && oldObj->parent() == this)
+		oldObj->setParent(nullptr);
+
+	// add new object
+	_objects[index] = object;
+	if(_objectOwner)
+		object->setParent(this);
+	connectPropertyChanges(object);
+	emitDataChanged(this->index(index, 0), this->index(index, 0), {});
+
+	// return old object
+	return oldObj;
+}
+
 int QObjectListModel::rowCount(const QModelIndex &parent) const
 {
 	Q_ASSERT(this->checkIndex(parent, QAbstractItemModel::CheckIndexOption::DoNotUseParent));

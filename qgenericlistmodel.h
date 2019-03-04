@@ -23,6 +23,8 @@ public:
 	TObject *object(int index) const;
 	TObject *takeObject(const QModelIndex &index);
 	TObject *takeObject(int index);
+	TObject *replaceObject(const QModelIndex &index, TObject *object);
+	TObject *replaceObject(int index, TObject *object);
 
 	void addObject(TObject *object);
 	void insertObject(const QModelIndex &index, TObject *object);
@@ -46,6 +48,8 @@ public:
 	void removeGadget(int index);
 	TGadget takeGadget(const QModelIndex &index);
 	TGadget takeGadget(int index);
+	TGadget replaceGadget(const QModelIndex &index, const TGadget &gadget);
+	TGadget replaceGadget(int index, const TGadget &gadget);
 	void resetModel(QList<TGadget> gadgets);
 
 	int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -106,6 +110,19 @@ TObject *QGenericListModel<TObject, QGenericListModel_QObject_SFINAE<TObject>>::
 {
 	return qobject_cast<TObject*>(this->QObjectListModel::takeObject(index));
 }
+
+template<typename TObject>
+TObject *QGenericListModel<TObject, QGenericListModel_QObject_SFINAE<TObject>>::replaceObject(const QModelIndex &index, TObject *object)
+{
+	return qobject_cast<TObject*>(this->QObjectListModel::replaceObject(index, object));
+}
+
+template<typename TObject>
+TObject *QGenericListModel<TObject, QGenericListModel_QObject_SFINAE<TObject>>::replaceObject(int index, TObject *object)
+{
+	return qobject_cast<TObject*>(this->QObjectListModel::replaceObject(index, object));
+}
+
 
 template <typename TObject>
 void QGenericListModel<TObject, QGenericListModel_QObject_SFINAE<TObject>>::addObject(TObject *object)
@@ -216,6 +233,25 @@ TGadget QGenericListModel<TGadget, typename TGadget::QtGadgetHelper>::takeGadget
 	const auto gadget = _gadgets.takeAt(index);
 	endRemoveRows();
 	return gadget;
+}
+
+template<typename TGadget>
+TGadget QGenericListModel<TGadget, typename TGadget::QtGadgetHelper>::replaceGadget(const QModelIndex &index, const TGadget &gadget)
+{
+	Q_ASSERT(checkIndex(index, CheckIndexOption::IndexIsValid | CheckIndexOption::ParentIsInvalid));
+	return replaceGadget(index.row(), gadget);
+}
+
+template<typename TGadget>
+TGadget QGenericListModel<TGadget, typename TGadget::QtGadgetHelper>::replaceGadget(int index, const TGadget &gadget)
+{
+	// remove old gadget
+	auto oldGad = _gadgets.at(index);
+	// add new object
+	_gadgets[index] = gadget;
+	emitDataChanged(this->index(index, 0), this->index(index, 0), {});
+	// return old object
+	return oldGad;
 }
 
 template<typename TGadget>

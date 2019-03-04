@@ -18,6 +18,8 @@ public:
 	Q_INVOKABLE QObject *object(int index) const;
 	QObject *takeObject(const QModelIndex &index);
 	Q_INVOKABLE QObject *takeObject(int index);
+	QObject *replaceObject(const QModelIndex &index, QObject *object);
+	Q_INVOKABLE QObject *replaceObject(int index, QObject *object);
 
 	int rowCount(const QModelIndex &parent = QModelIndex()) const override;
 	using QMetaObjectModel::index;
