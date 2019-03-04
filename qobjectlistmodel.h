@@ -4,7 +4,7 @@
 #include "qmetaobjectmodel.h"
 
 class QObjectSignalHelper;
-class QObjectListModel : public QMetaObjectModel
+class Q_QOBJECT_LIST_MODEL_EXPORT QObjectListModel : public QMetaObjectModel
 {
 	Q_OBJECT
 
@@ -25,7 +25,7 @@ public:
 	using QMetaObjectModel::index;
 	QModelIndex index(QObject *object) const;
 
-public slots:
+public Q_SLOTS:
 	void addObject(QObject *object);
 	void insertObject(const QModelIndex &index, QObject *object);
 	void insertObject(int index, QObject *object);

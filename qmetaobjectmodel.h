@@ -5,7 +5,7 @@
 
 #include "qmodelaliasadapter.h"
 
-class QMetaObjectModel : public QModelAliasBaseAdapter<>
+class Q_QOBJECT_LIST_MODEL_EXPORT QMetaObjectModel : public QModelAliasBaseAdapter<>
 {
 	Q_OBJECT
 
@@ -20,10 +20,10 @@ public:
 
 	bool editable() const;
 
-public slots:
+public Q_SLOTS:
 	void setEditable(bool editable);
 
-signals:
+Q_SIGNALS:
 	void editableChanged(bool editable, QPrivateSignal);
 
 protected:

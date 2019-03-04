@@ -4,7 +4,7 @@
 #include <QIdentityProxyModel>
 #include "qmodelaliasadapter.h"
 
-class QObjectProxyModel : public QModelAliasBaseAdapter<QIdentityProxyModel>
+class Q_QOBJECT_LIST_MODEL_EXPORT QObjectProxyModel : public QModelAliasBaseAdapter<QIdentityProxyModel>
 {
 	Q_OBJECT
 
@@ -31,7 +31,7 @@ protected:
 	QVariant originalData(const QModelIndex &index, int role) const override;
 	bool setOriginalData(const QModelIndex &index, const QVariant &value, int role) override;
 
-private slots:
+private Q_SLOTS:
 	void extendDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles = QVector<int>());
 };
 

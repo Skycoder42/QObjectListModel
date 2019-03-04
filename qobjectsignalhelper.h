@@ -6,7 +6,7 @@
 #include <QMetaProperty>
 #include <QObject>
 
-class QObjectSignalHelper : public QObject
+class Q_QOBJECT_LIST_MODEL_EXPORT QObjectSignalHelper : public QObject
 {
 	Q_OBJECT
 public:
@@ -15,7 +15,7 @@ public:
 	void addObject(QObject *object);
 	void removeObject(QObject *object);
 
-private slots:
+private Q_SLOTS:
 	void propertyChanged();
 
 private:

@@ -16,7 +16,7 @@ class QModelAliasBaseAdapter : public TModel
 public:
 	enum class Convert {
 		Read,
-		Write,
+		Write
 	};
 
 	using ConverterFunc = std::function<QVariant(Convert, QVariant)>;
